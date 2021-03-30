@@ -244,7 +244,10 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	r.initLocalInformer(r.GetContext(), desiredObject)
+	err = r.initLocalInformer(r.GetContext(), desiredObject)
+	if err != nil {
+		return ctrl.Result{}, errors.WithStackIf(err)
+	}
 
 	return ctrl.Result{}, nil
 }
