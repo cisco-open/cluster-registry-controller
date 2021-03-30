@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    kubeadm.alpha.kubernetes.io/cri-socket: unix:///run/containerd/containerd.sock
+    node.alpha.kubernetes.io/ttl: "0"
+    volumes.kubernetes.io/controller-managed-attach-detach: "true"
+  creationTimestamp: "2021-03-12T22:12:20Z"
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: kind-control-plane
+    kubernetes.io/os: linux
+    node-role.kubernetes.io/master: ""
+  name: kind-control-plane
+  resourceVersion: "463"
+  selfLink: /api/v1/nodes/kind-control-plane
+  uid: 2361a47c-c791-49a8-b803-ef568e5dd9af
+spec:
+  podCIDR: 10.244.0.0/24
+  podCIDRs:
+  - 10.244.0.0/24
+  providerID: kind://docker/kind/kind-control-plane
+status:
+  addresses:
+  - address: 172.18.0.2
+    type: InternalIP
+  - address: kind-control-plane
+    type: Hostname
+  allocatable:
+    cpu: "4"
+    ephemeral-storage: 41021664Ki
+    hugepages-1Gi: "0"
+    hugepages-2Mi: "0"
+    memory: 4033432Ki
+    pods: "110"
+  capacity:
+    cpu: "4"
+    ephemeral-storage: 41021664Ki
+    hugepages-1Gi: "0"
+    hugepages-2Mi: "0"
+    memory: 4033432Ki
+    pods: "110"
+  conditions:
+  - lastHeartbeatTime: "2021-03-12T22:12:54Z"
+    lastTransitionTime: "2021-03-12T22:12:17Z"
+    message: kubelet has sufficient memory available
+    reason: KubeletHasSufficientMemory
+    status: "False"
+    type: MemoryPressure
+  - lastHeartbeatTime: "2021-03-12T22:12:54Z"
+    lastTransitionTime: "2021-03-12T22:12:17Z"
+    message: kubelet has no disk pressure
+    reason: KubeletHasNoDiskPressure
+    status: "False"
+    type: DiskPressure
+  - lastHeartbeatTime: "2021-03-12T22:12:54Z"
+    lastTransitionTime: "2021-03-12T22:12:17Z"
+    message: kubelet has sufficient PID available
+    reason: KubeletHasSufficientPID
+    status: "False"
+    type: PIDPressure
+  - lastHeartbeatTime: "2021-03-12T22:12:54Z"
+    lastTransitionTime: "2021-03-12T22:12:54Z"
+    message: kubelet is posting ready status
+    reason: KubeletReady
+    status: "True"
+    type: Ready
+  daemonEndpoints:
+    kubeletEndpoint:
+      Port: 10250
+  images:
+  - names:
+    - k8s.gcr.io/etcd:3.4.3-0
+    sizeBytes: 289997247
+  - names:
+    - k8s.gcr.io/kube-apiserver:v1.17.5
+    sizeBytes: 144466737
+  - names:
+    - k8s.gcr.io/kube-proxy:v1.17.5
+    sizeBytes: 132100222
+  - names:
+    - k8s.gcr.io/kube-controller-manager:v1.17.5
+    sizeBytes: 131244355
+  - names:
+    - docker.io/kindest/kindnetd:0.5.4
+    sizeBytes: 113207016
+  - names:
+    - k8s.gcr.io/kube-scheduler:v1.17.5
+    sizeBytes: 111947057
+  - names:
+    - k8s.gcr.io/debian-base:v2.0.0
+    sizeBytes: 53884301
+  - names:
+    - docker.io/rancher/local-path-provisioner:v0.0.12
+    sizeBytes: 41994847
+  - names:
+    - k8s.gcr.io/coredns:1.6.5
+    sizeBytes: 41705951
+  - names:
+    - k8s.gcr.io/pause:3.1
+    sizeBytes: 746479
+  nodeInfo:
+    architecture: amd64
+    bootID: dc84f3de-cdab-4c47-8328-efef8fdcf010
+    containerRuntimeVersion: containerd://1.3.3-14-g449e9269
+    kernelVersion: 4.19.121-linuxkit
+    kubeProxyVersion: v1.17.5
+    kubeletVersion: v1.17.5
+    machineID: 8e7589a9984f4994883aafe8ebf3caef
+    operatingSystem: linux
+    osImage: Ubuntu 19.10
+    systemUUID: 1bd32c91-d33f-4065-8e24-0fd56b19de91

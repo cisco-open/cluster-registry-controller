@@ -1,0 +1,224 @@
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    container.googleapis.com/instance_id: "8447213806914574185"
+    node.alpha.kubernetes.io/ttl: "0"
+    node.gke.io/last-applied-node-labels: cloud.google.com/gke-nodepool=pool1,cloud.google.com/gke-os-distribution=cos,cloud.google.com/gke-preemptible=true,cloud.google.com/machine-family=e2,nodepool.banzaicloud.io/name=pool1
+    nodepool.banzaicloud.io/managed-labels: '["node.banzaicloud.io/instanceTypeCategory","node.banzaicloud.io/memory","node.banzaicloud.io/networkPerfCategory","node.banzaicloud.io/ondemand","nodepool.banzaicloud.io/name","node.banzaicloud.io/cpu"]'
+    volumes.kubernetes.io/controller-managed-attach-detach: "true"
+  creationTimestamp: "2021-03-08T22:50:05Z"
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/instance-type: e2-medium
+    beta.kubernetes.io/os: linux
+    cloud.google.com/gke-nodepool: pool1
+    cloud.google.com/gke-os-distribution: cos
+    cloud.google.com/gke-preemptible: "true"
+    cloud.google.com/machine-family: e2
+    failure-domain.beta.kubernetes.io/region: europe-north1
+    failure-domain.beta.kubernetes.io/zone: europe-north1-a
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: gke-vzf3z1vvleco9-pool1-7e48d363-8qz1
+    kubernetes.io/os: linux
+    node.banzaicloud.io/cpu: "2"
+    node.banzaicloud.io/instanceTypeCategory: General_purpose
+    node.banzaicloud.io/memory: "4"
+    node.banzaicloud.io/networkPerfCategory: medium
+    node.banzaicloud.io/ondemand: "false"
+    node.kubernetes.io/instance-type: e2-medium
+    nodepool.banzaicloud.io/name: pool1
+    topology.kubernetes.io/region: europe-north1
+    topology.kubernetes.io/zone: europe-north1-a
+  name: gke-vzf3z1vvleco9-pool1-7e48d363-8qz1
+  resourceVersion: "4507"
+  selfLink: /api/v1/nodes/gke-vzf3z1vvleco9-pool1-7e48d363-8qz1
+  uid: 60f089a2-5d08-46a3-8087-6ae084f4b9ec
+spec:
+  podCIDR: 10.68.0.0/24
+  podCIDRs:
+  - 10.68.0.0/24
+  providerID: gce://gcp-banzaidevgcp-nprd-38306/europe-north1-a/gke-vzf3z1vvleco9-pool1-7e48d363-8qz1
+status:
+  addresses:
+  - address: 10.166.0.3
+    type: InternalIP
+  - address: 35.228.62.141
+    type: ExternalIP
+  - address: gke-vzf3z1vvleco9-pool1-7e48d363-8qz1.c.gcp-banzaidevgcp-nprd-38306.internal
+    type: InternalDNS
+  - address: gke-vzf3z1vvleco9-pool1-7e48d363-8qz1.c.gcp-banzaidevgcp-nprd-38306.internal
+    type: Hostname
+  allocatable:
+    attachable-volumes-gce-pd: "15"
+    cpu: 940m
+    ephemeral-storage: "47093746742"
+    hugepages-2Mi: "0"
+    memory: 2897968Ki
+    pods: "110"
+  capacity:
+    attachable-volumes-gce-pd: "15"
+    cpu: "2"
+    ephemeral-storage: 98868448Ki
+    hugepages-2Mi: "0"
+    memory: 4043824Ki
+    pods: "110"
+  conditions:
+  - lastHeartbeatTime: "2021-03-08T23:00:07Z"
+    lastTransitionTime: "2021-03-08T22:50:05Z"
+    message: kernel has no deadlock
+    reason: KernelHasNoDeadlock
+    status: "False"
+    type: KernelDeadlock
+  - lastHeartbeatTime: "2021-03-08T23:00:07Z"
+    lastTransitionTime: "2021-03-08T22:50:05Z"
+    message: Filesystem is not read-only
+    reason: FilesystemIsNotReadOnly
+    status: "False"
+    type: ReadonlyFilesystem
+  - lastHeartbeatTime: "2021-03-08T23:00:07Z"
+    lastTransitionTime: "2021-03-08T22:50:05Z"
+    message: docker overlay2 is functioning properly
+    reason: NoCorruptDockerOverlay2
+    status: "False"
+    type: CorruptDockerOverlay2
+  - lastHeartbeatTime: "2021-03-08T23:00:07Z"
+    lastTransitionTime: "2021-03-08T22:50:05Z"
+    message: node is functioning properly
+    reason: NoFrequentUnregisterNetDevice
+    status: "False"
+    type: FrequentUnregisterNetDevice
+  - lastHeartbeatTime: "2021-03-08T23:00:07Z"
+    lastTransitionTime: "2021-03-08T22:50:05Z"
+    message: kubelet is functioning properly
+    reason: NoFrequentKubeletRestart
+    status: "False"
+    type: FrequentKubeletRestart
+  - lastHeartbeatTime: "2021-03-08T23:00:07Z"
+    lastTransitionTime: "2021-03-08T22:50:05Z"
+    message: docker is functioning properly
+    reason: NoFrequentDockerRestart
+    status: "False"
+    type: FrequentDockerRestart
+  - lastHeartbeatTime: "2021-03-08T23:00:07Z"
+    lastTransitionTime: "2021-03-08T22:50:05Z"
+    message: containerd is functioning properly
+    reason: NoFrequentContainerdRestart
+    status: "False"
+    type: FrequentContainerdRestart
+  - lastHeartbeatTime: "2021-03-08T22:50:19Z"
+    lastTransitionTime: "2021-03-08T22:50:19Z"
+    message: RouteController created a route
+    reason: RouteCreated
+    status: "False"
+    type: NetworkUnavailable
+  - lastHeartbeatTime: "2021-03-08T23:01:08Z"
+    lastTransitionTime: "2021-03-08T22:50:05Z"
+    message: kubelet has sufficient memory available
+    reason: KubeletHasSufficientMemory
+    status: "False"
+    type: MemoryPressure
+  - lastHeartbeatTime: "2021-03-08T23:01:08Z"
+    lastTransitionTime: "2021-03-08T22:50:05Z"
+    message: kubelet has no disk pressure
+    reason: KubeletHasNoDiskPressure
+    status: "False"
+    type: DiskPressure
+  - lastHeartbeatTime: "2021-03-08T23:01:08Z"
+    lastTransitionTime: "2021-03-08T22:50:05Z"
+    message: kubelet has sufficient PID available
+    reason: KubeletHasSufficientPID
+    status: "False"
+    type: PIDPressure
+  - lastHeartbeatTime: "2021-03-08T23:01:08Z"
+    lastTransitionTime: "2021-03-08T22:50:15Z"
+    message: kubelet is posting ready status. AppArmor enabled
+    reason: KubeletReady
+    status: "True"
+    type: Ready
+  daemonEndpoints:
+    kubeletEndpoint:
+      Port: 10250
+  images:
+  - names:
+    - gke.gcr.io/kube-proxy-amd64:v1.17.15-gke.800
+    - k8s.gcr.io/kube-proxy-amd64:v1.17.15-gke.800
+    sizeBytes: 118354221
+  - names:
+    - gke.gcr.io/k8s-dns-kube-dns-amd64@sha256:9e76595f4bf8490bbaff6acfcc1f3243a4bb112481f7f59b3a52c2b09e6ced3c
+    - gke.gcr.io/k8s-dns-kube-dns-amd64:1.15.16-gke.0
+    sizeBytes: 102157349
+  - names:
+    - gke.gcr.io/k8s-dns-sidecar-amd64@sha256:f890a184d953ef2a80f756ff1ab93e92cc6cd76cdb0c89b56d1d30846d72249b
+    - gke.gcr.io/k8s-dns-sidecar-amd64:1.15.16-gke.0
+    sizeBytes: 94439589
+  - names:
+    - gke.gcr.io/k8s-dns-dnsmasq-nanny-amd64@sha256:bd25b644c9e14dcfe77f54ec7f249b151850f6ad23548e02046aa9204fb11d25
+    - gke.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.15.16-gke.0
+    sizeBytes: 92324592
+  - names:
+    - asia.gcr.io/gke-release-staging/addon-resizer@sha256:c345bde227f83897cf37c0dd0faadcbba60cad013671ccf9b2a49b0342560043
+    - eu.gcr.io/gke-release-staging/addon-resizer@sha256:c345bde227f83897cf37c0dd0faadcbba60cad013671ccf9b2a49b0342560043
+    - gcr.io/gke-release-staging/addon-resizer@sha256:c345bde227f83897cf37c0dd0faadcbba60cad013671ccf9b2a49b0342560043
+    - asia.gcr.io/gke-release-staging/addon-resizer:1.8.7-gke.0
+    - eu.gcr.io/gke-release-staging/addon-resizer:1.8.7-gke.0
+    sizeBytes: 50754800
+  - names:
+    - ghcr.io/banzaicloud/instance-termination-handler@sha256:b9c415bf387ff2a19bab9f18c04525563e36796733454462fa037028d36c9e5a
+    - ghcr.io/banzaicloud/instance-termination-handler:0.1.1
+    sizeBytes: 46114957
+  - names:
+    - asia.gcr.io/gke-release-staging/cluster-proportional-autoscaler-amd64@sha256:e3f48b3d1e49cfa3e7f002020769c9cd01cd0e77bbc99dc133c7ab0f8097e989
+    - eu.gcr.io/gke-release-staging/cluster-proportional-autoscaler-amd64@sha256:e3f48b3d1e49cfa3e7f002020769c9cd01cd0e77bbc99dc133c7ab0f8097e989
+    - gcr.io/gke-release-staging/cluster-proportional-autoscaler-amd64@sha256:e3f48b3d1e49cfa3e7f002020769c9cd01cd0e77bbc99dc133c7ab0f8097e989
+    - asia.gcr.io/gke-release-staging/cluster-proportional-autoscaler-amd64:1.7.1-gke.0
+    - eu.gcr.io/gke-release-staging/cluster-proportional-autoscaler-amd64:1.7.1-gke.0
+    sizeBytes: 43947291
+  - names:
+    - k8s.gcr.io/prometheus-to-sd@sha256:1d49fb3b108e6b42542e4a9b056dee308f06f88824326cde1636eea0472b799d
+    - k8s.gcr.io/prometheus-to-sd:v0.7.2
+    sizeBytes: 42314030
+  - names:
+    - asia.gcr.io/gke-release-staging/cpvpa-amd64@sha256:4c0ef340ce9c900e939c4dde91466fe98fcd71794c972ca426b06572aa302357
+    - eu.gcr.io/gke-release-staging/cpvpa-amd64@sha256:4c0ef340ce9c900e939c4dde91466fe98fcd71794c972ca426b06572aa302357
+    - gcr.io/gke-release-staging/cpvpa-amd64@sha256:4c0ef340ce9c900e939c4dde91466fe98fcd71794c972ca426b06572aa302357
+    - asia.gcr.io/gke-release-staging/cpvpa-amd64:v0.8.1-gke.1
+    - eu.gcr.io/gke-release-staging/cpvpa-amd64:v0.8.1-gke.1
+    sizeBytes: 42307057
+  - names:
+    - k8s.gcr.io/prometheus-to-sd@sha256:14666989f40bb7c896c3e775a93c6873e2b791d65bc65579f58a078b7f9a764e
+    - k8s.gcr.io/prometheus-to-sd:v0.5.0
+    sizeBytes: 41861013
+  - names:
+    - k8s.gcr.io/metrics-server-amd64@sha256:c9c4e95068b51d6b33a9dccc61875df07dc650abbf4ac1a19d58b4628f89288b
+    - k8s.gcr.io/metrics-server-amd64:v0.3.6
+    sizeBytes: 39944451
+  - names:
+    - asia.gcr.io/gke-release-staging/addon-resizer@sha256:c6b0e87d835086b7e1f6fcf148611358534a8081e6489c8fee9c79c6597a4ee3
+    - eu.gcr.io/gke-release-staging/addon-resizer@sha256:c6b0e87d835086b7e1f6fcf148611358534a8081e6489c8fee9c79c6597a4ee3
+    - gcr.io/gke-release-staging/addon-resizer@sha256:c6b0e87d835086b7e1f6fcf148611358534a8081e6489c8fee9c79c6597a4ee3
+    - asia.gcr.io/gke-release-staging/addon-resizer:1.8.8-gke.1
+    - eu.gcr.io/gke-release-staging/addon-resizer:1.8.8-gke.1
+    sizeBytes: 33230021
+  - names:
+    - asia.gcr.io/google-containers/pause-amd64@sha256:163ac025575b775d1c0f9bf0bdd0f086883171eb475b5068e7defa4ca9e76516
+    - eu.gcr.io/google-containers/pause-amd64@sha256:163ac025575b775d1c0f9bf0bdd0f086883171eb475b5068e7defa4ca9e76516
+    - gcr.io/google-containers/pause-amd64@sha256:163ac025575b775d1c0f9bf0bdd0f086883171eb475b5068e7defa4ca9e76516
+    - asia.gcr.io/google-containers/pause-amd64:3.0
+    - eu.gcr.io/google-containers/pause-amd64:3.0
+    sizeBytes: 746888
+  - names:
+    - k8s.gcr.io/pause@sha256:f78411e19d84a252e53bff71a4407a5686c46983a2c2eeed83929b888179acea
+    - k8s.gcr.io/pause:3.1
+    sizeBytes: 742472
+  nodeInfo:
+    architecture: amd64
+    bootID: da717b84-f931-4f50-b52e-582328c275c7
+    containerRuntimeVersion: docker://19.3.6
+    kernelVersion: 4.19.150+
+    kubeProxyVersion: v1.17.15-gke.800
+    kubeletVersion: v1.17.15-gke.800
+    machineID: 3094daf093d8371d417b1ea8e0ec668d
+    operatingSystem: linux
+    osImage: Container-Optimized OS from Google
+    systemUUID: 3094daf0-93d8-371d-417b-1ea8e0ec668d

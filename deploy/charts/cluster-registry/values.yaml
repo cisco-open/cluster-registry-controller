@@ -1,0 +1,50 @@
+# Default values for cluster-registry-controller
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicas: 1
+
+istio:
+  revision: ""
+
+podAnnotations: []
+
+podSecurityContext:
+  runAsUser: 65534
+  runAsGroup: 65534
+securityContext:
+  allowPrivilegeEscalation: false
+image:
+  repository: waynz0r/cluster-registry
+  tag: master
+  pullPolicy: Always
+
+nodeSelector: {}
+affinity: {}
+tolerations: []
+resources:
+  requests:
+    memory: "100Mi"
+    cpu: "100m"
+  limits:
+    memory: "200Mi"
+    cpu: "300m"
+
+service:
+  type: ClusterIP
+  port: 8080
+
+serviceAccount:
+  annotations: {}
+
+podDisruptionBudget:
+  enabled: false
+
+controller:
+  leaderElection:
+    enabled: false
+    name: "cluster-registry-leader-election"
+  log:
+    format: json
+    verbosity: 0
+  workers: 2

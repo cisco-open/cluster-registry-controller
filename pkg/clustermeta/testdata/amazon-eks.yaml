@@ -1,0 +1,135 @@
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    node.alpha.kubernetes.io/ttl: "0"
+    nodepool.banzaicloud.io/managed-labels: '["node.banzaicloud.io/cpu","node.banzaicloud.io/instanceTypeCategory","node.banzaicloud.io/memory","node.banzaicloud.io/networkPerfCategory","node.banzaicloud.io/ondemand","nodepool.banzaicloud.io/name"]'
+    volumes.kubernetes.io/controller-managed-attach-detach: "true"
+  creationTimestamp: "2021-03-08T23:04:47Z"
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/instance-type: t2.medium
+    beta.kubernetes.io/os: linux
+    failure-domain.beta.kubernetes.io/region: eu-central-1
+    failure-domain.beta.kubernetes.io/zone: eu-central-1a
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: ip-192-168-70-196.eu-central-1.compute.internal
+    kubernetes.io/os: linux
+    node.banzaicloud.io/cpu: "2"
+    node.banzaicloud.io/instanceTypeCategory: General_purpose
+    node.banzaicloud.io/memory: "4"
+    node.banzaicloud.io/networkPerfCategory: low
+    node.banzaicloud.io/ondemand: "false"
+    node.kubernetes.io/instance-type: t2.medium
+    nodepool.banzaicloud.io/name: pool1
+    nodepool.banzaicloud.io/version: c67ce6aa812f6399dde59c9dc680db1a75f78275
+    topology.kubernetes.io/region: eu-central-1
+    topology.kubernetes.io/zone: eu-central-1a
+  name: ip-192-168-70-196.eu-central-1.compute.internal
+  resourceVersion: "1882"
+  selfLink: /api/v1/nodes/ip-192-168-70-196.eu-central-1.compute.internal
+  uid: 7ede515a-3032-4740-b59d-ab297f448b72
+spec:
+  providerID: aws:///eu-central-1a/i-088b4f07708408cc0
+status:
+  addresses:
+  - address: 192.168.70.196
+    type: InternalIP
+  - address: 18.197.127.88
+    type: ExternalIP
+  - address: ip-192-168-70-196.eu-central-1.compute.internal
+    type: Hostname
+  - address: ip-192-168-70-196.eu-central-1.compute.internal
+    type: InternalDNS
+  - address: ec2-18-197-127-88.eu-central-1.compute.amazonaws.com
+    type: ExternalDNS
+  allocatable:
+    attachable-volumes-aws-ebs: "39"
+    cpu: 1930m
+    ephemeral-storage: "47233297124"
+    hugepages-2Mi: "0"
+    memory: 3482572Ki
+    pods: "17"
+  capacity:
+    attachable-volumes-aws-ebs: "39"
+    cpu: "2"
+    ephemeral-storage: 52416492Ki
+    hugepages-2Mi: "0"
+    memory: 4037580Ki
+    pods: "17"
+  conditions:
+  - lastHeartbeatTime: "2021-03-08T23:06:48Z"
+    lastTransitionTime: "2021-03-08T23:04:44Z"
+    message: kubelet has sufficient memory available
+    reason: KubeletHasSufficientMemory
+    status: "False"
+    type: MemoryPressure
+  - lastHeartbeatTime: "2021-03-08T23:06:48Z"
+    lastTransitionTime: "2021-03-08T23:04:44Z"
+    message: kubelet has no disk pressure
+    reason: KubeletHasNoDiskPressure
+    status: "False"
+    type: DiskPressure
+  - lastHeartbeatTime: "2021-03-08T23:06:48Z"
+    lastTransitionTime: "2021-03-08T23:04:44Z"
+    message: kubelet has sufficient PID available
+    reason: KubeletHasSufficientPID
+    status: "False"
+    type: PIDPressure
+  - lastHeartbeatTime: "2021-03-08T23:06:48Z"
+    lastTransitionTime: "2021-03-08T23:05:17Z"
+    message: kubelet is posting ready status
+    reason: KubeletReady
+    status: "True"
+    type: Ready
+  daemonEndpoints:
+    kubeletEndpoint:
+      Port: 10250
+  images:
+  - names:
+    - 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni@sha256:f310c918ee2b4ebced76d2d64a2ec128dde3b364d1b495f0ae73011f489d474d
+    - 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni:v1.7.5-eksbuild.1
+    sizeBytes: 312076970
+  - names:
+    - 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni-init@sha256:d96d712513464de6ce94e422634a25546565418f20d1b28d3bce399d578f3296
+    - 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni-init:v1.7.5-eksbuild.1
+    sizeBytes: 287782202
+  - names:
+    - 602401143452.dkr.ecr.eu-central-1.amazonaws.com/eks/kube-proxy@sha256:cbb2c85cbaa3d29d244eaec6ec5a8bbf765cc651590078ae30e9d210bac0c92a
+    - 602401143452.dkr.ecr.eu-central-1.amazonaws.com/eks/kube-proxy:v1.17.9-eksbuild.1
+    sizeBytes: 130676901
+  - names:
+    - k8s.gcr.io/autoscaling/cluster-autoscaler@sha256:cfc4c57fc3d6262457bb7da2b1bf20f23eafc1decacf34683d6acf8281f886e6
+    - k8s.gcr.io/autoscaling/cluster-autoscaler:v1.17.4
+    sizeBytes: 90458506
+  - names:
+    - traefik@sha256:5ec34caf19d114f8f0ed76f9bc3dad6ba8cf6d13a1575c4294b59b77709def39
+    - traefik:1.7.20
+    sizeBytes: 85706953
+  - names:
+    - ghcr.io/banzaicloud/instance-termination-handler@sha256:b9c415bf387ff2a19bab9f18c04525563e36796733454462fa037028d36c9e5a
+    - ghcr.io/banzaicloud/instance-termination-handler:0.1.1
+    sizeBytes: 46114957
+  - names:
+    - 602401143452.dkr.ecr.eu-central-1.amazonaws.com/eks/coredns@sha256:476c154960a843ac498376556fe5c42baad2f3ac690806b9989862064ab547c2
+    - 602401143452.dkr.ecr.eu-central-1.amazonaws.com/eks/coredns:v1.6.6-eksbuild.1
+    sizeBytes: 40859174
+  - names:
+    - ghcr.io/banzaicloud/nodepool-labels-operator@sha256:f46ab8c4a327f51dfb8cb47188a832d862531201d489c885f0c2798700f46f74
+    - ghcr.io/banzaicloud/nodepool-labels-operator:v0.1.1
+    sizeBytes: 39647988
+  - names:
+    - 602401143452.dkr.ecr.eu-central-1.amazonaws.com/eks/pause@sha256:1cb4ab85a3480446f9243178395e6bee7350f0d71296daeb6a9fdd221e23aea6
+    - 602401143452.dkr.ecr.eu-central-1.amazonaws.com/eks/pause:3.1-eksbuild.1
+    sizeBytes: 682696
+  nodeInfo:
+    architecture: amd64
+    bootID: c2459348-a9de-41be-8654-661985cbd0ba
+    containerRuntimeVersion: docker://19.3.6
+    kernelVersion: 4.14.198-152.320.amzn2.x86_64
+    kubeProxyVersion: v1.17.11-eks-cfdc40
+    kubeletVersion: v1.17.11-eks-cfdc40
+    machineID: 373e4bb11ccf4ee0a68b006c4826aa19
+    operatingSystem: linux
+    osImage: Amazon Linux 2
+    systemUUID: EC2E70D2-A258-A245-AA55-A98555B8AB42

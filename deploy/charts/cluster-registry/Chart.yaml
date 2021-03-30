@@ -1,0 +1,13 @@
+apiVersion: v1
+name: cluster-registry
+description: Cluster registry for K8s
+home: https://banzaicloud.com
+
+maintainers:
+- email: info@banzaicloud.com
+  name: Banzai Cloud
+sources:
+- https://github.com/banzaicloud/backyards
+
+version: 0.0.1
+appVersion: 0.0.1

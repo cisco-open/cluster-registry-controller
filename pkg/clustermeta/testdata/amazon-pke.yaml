@@ -1,0 +1,161 @@
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    io.cilium.network.ipv4-cilium-host: 10.20.0.203
+    io.cilium.network.ipv4-health-ip: 10.20.0.133
+    io.cilium.network.ipv4-pod-cidr: 10.20.0.0/24
+    kubeadm.alpha.kubernetes.io/cri-socket: unix:///run/containerd/containerd.sock
+    node.alpha.kubernetes.io/ttl: "0"
+    nodepool.banzaicloud.io/managed-labels: '["nodepool.banzaicloud.io/name","node.banzaicloud.io/cpu","node.banzaicloud.io/instanceTypeCategory","node.banzaicloud.io/memory","node.banzaicloud.io/networkPerfCategory","node.banzaicloud.io/ondemand"]'
+    volumes.kubernetes.io/controller-managed-attach-detach: "true"
+  creationTimestamp: "2021-03-08T14:31:58Z"
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/instance-type: c5.large
+    beta.kubernetes.io/os: linux
+    failure-domain.beta.kubernetes.io/region: eu-central-1
+    failure-domain.beta.kubernetes.io/zone: eu-central-1a
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: ip-192-168-2-35.eu-central-1.compute.internal
+    kubernetes.io/os: linux
+    node-role.kubernetes.io/master: ""
+    node.banzaicloud.io/cpu: "2"
+    node.banzaicloud.io/instanceTypeCategory: Compute_optimized
+    node.banzaicloud.io/memory: "4"
+    node.banzaicloud.io/networkPerfCategory: high
+    node.banzaicloud.io/ondemand: "false"
+    node.kubernetes.io/instance-type: c5.large
+    nodepool.banzaicloud.io/name: master
+    topology.kubernetes.io/region: eu-central-1
+    topology.kubernetes.io/zone: eu-central-1a
+  name: ip-192-168-2-35.eu-central-1.compute.internal
+  resourceVersion: "107595"
+  selfLink: /api/v1/nodes/ip-192-168-2-35.eu-central-1.compute.internal
+  uid: 27dddba5-1257-4258-8bf8-ecf866f30cf0
+spec:
+  podCIDR: 10.20.0.0/24
+  podCIDRs:
+  - 10.20.0.0/24
+  providerID: aws:///eu-central-1a/i-09ef514e292105377
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+status:
+  addresses:
+  - address: 192.168.2.35
+    type: InternalIP
+  - address: 52.28.173.241
+    type: ExternalIP
+  - address: ip-192-168-2-35.eu-central-1.compute.internal
+    type: Hostname
+  - address: ip-192-168-2-35.eu-central-1.compute.internal
+    type: InternalDNS
+  - address: ec2-52-28-173-241.eu-central-1.compute.amazonaws.com
+    type: ExternalDNS
+  allocatable:
+    attachable-volumes-aws-ebs: "25"
+    cpu: 1850m
+    ephemeral-storage: "44631645721"
+    hugepages-1Gi: "0"
+    hugepages-2Mi: "0"
+    memory: 2662920Ki
+    pods: "110"
+  capacity:
+    attachable-volumes-aws-ebs: "25"
+    cpu: "2"
+    ephemeral-storage: 50758604Ki
+    hugepages-1Gi: "0"
+    hugepages-2Mi: "0"
+    memory: 3785224Ki
+    pods: "110"
+  conditions:
+  - lastHeartbeatTime: "2021-03-08T14:33:06Z"
+    lastTransitionTime: "2021-03-08T14:33:06Z"
+    message: Cilium is running on this node
+    reason: CiliumIsUp
+    status: "False"
+    type: NetworkUnavailable
+  - lastHeartbeatTime: "2021-03-08T23:00:39Z"
+    lastTransitionTime: "2021-03-08T14:31:54Z"
+    message: kubelet has sufficient memory available
+    reason: KubeletHasSufficientMemory
+    status: "False"
+    type: MemoryPressure
+  - lastHeartbeatTime: "2021-03-08T23:00:39Z"
+    lastTransitionTime: "2021-03-08T14:31:54Z"
+    message: kubelet has no disk pressure
+    reason: KubeletHasNoDiskPressure
+    status: "False"
+    type: DiskPressure
+  - lastHeartbeatTime: "2021-03-08T23:00:39Z"
+    lastTransitionTime: "2021-03-08T14:31:54Z"
+    message: kubelet has sufficient PID available
+    reason: KubeletHasSufficientPID
+    status: "False"
+    type: PIDPressure
+  - lastHeartbeatTime: "2021-03-08T23:00:39Z"
+    lastTransitionTime: "2021-03-08T14:33:02Z"
+    message: kubelet is posting ready status. AppArmor enabled
+    reason: KubeletReady
+    status: "True"
+    type: Ready
+  daemonEndpoints:
+    kubeletEndpoint:
+      Port: 10250
+  images:
+  - names:
+    - docker.io/banzaicloud/cilium@sha256:04734c47c93dd7dd7198bff555ab5b03943abd22a07124b37cdc44fe8a6ad731
+    - docker.io/banzaicloud/cilium:v1.9.1
+    sizeBytes: 152355763
+  - names:
+    - docker.io/banzaicloud/etcd@sha256:4198ba6f82f642dfd18ecf840ee37afb9df4b596f06eef20e44d0aec4ea27216
+    - docker.io/banzaicloud/etcd:3.4.3-0
+    sizeBytes: 100946002
+  - names:
+    - docker.io/banzaicloud/kube-apiserver@sha256:e9e916a58ccf6218055d95e5ca580d305d60e6e33b74dab47fa56a581213de47
+    - docker.io/banzaicloud/kube-apiserver:v1.17.16
+    sizeBytes: 50673258
+  - names:
+    - docker.io/banzaicloud/kube-proxy@sha256:55c953bef81858328811467acf6e3f7f1bc2634917df18770fc3874ff6f513f3
+    - docker.io/banzaicloud/kube-proxy:v1.17.16
+    sizeBytes: 49236344
+  - names:
+    - docker.io/banzaicloud/kube-controller-manager@sha256:b87d36909a94aabe84902338f8d4edd0f94e972403a5a3dd084bb9f9da8cf506
+    - docker.io/banzaicloud/kube-controller-manager:v1.17.16
+    sizeBytes: 48846956
+  - names:
+    - docker.io/banzaicloud/kube-scheduler@sha256:f38871fa02aff469d77d89c5212058389e763b21aeaf5139497097ee762af51a
+    - docker.io/banzaicloud/kube-scheduler:v1.17.16
+    sizeBytes: 33825234
+  - names:
+    - docker.io/banzaicloud/auto-approver@sha256:e96ae505c962540e19e68b4c218a50e7239123f6ae29a55f1fc3729d965a7ebc
+    - docker.io/banzaicloud/auto-approver:0.1.0
+    sizeBytes: 15960740
+  - names:
+    - docker.io/banzaicloud/cilium-operator@sha256:4b6c735761aecb1193542dcf359f9f70de7bca82d8966adf692176891247c17a
+    - docker.io/banzaicloud/cilium-operator:v1.9.1
+    sizeBytes: 15531407
+  - names:
+    - ghcr.io/banzaicloud/instance-termination-handler@sha256:b9c415bf387ff2a19bab9f18c04525563e36796733454462fa037028d36c9e5a
+    - ghcr.io/banzaicloud/instance-termination-handler:0.1.1
+    sizeBytes: 14640645
+  - names:
+    - docker.io/banzaicloud/coredns@sha256:608ac7ccba5ce41c6941fca13bc67059c1eef927fd968b554b790e21cc92543c
+    - docker.io/banzaicloud/coredns:1.6.5
+    sizeBytes: 13238295
+  - names:
+    - docker.io/banzaicloud/pause@sha256:fcaff905397ba63fd376d0c3019f1f1cb6e7506131389edbcb3d22719f1ae54d
+    - docker.io/banzaicloud/pause:3.1
+    sizeBytes: 325550
+  nodeInfo:
+    architecture: amd64
+    bootID: 16c2a91f-8bde-4ee8-8fd3-de5a82535c0b
+    containerRuntimeVersion: containerd://1.3.3
+    kernelVersion: 5.4.0-1035-aws
+    kubeProxyVersion: v1.17.16
+    kubeletVersion: v1.17.16
+    machineID: ec24eee07ebc803045c4af65883288fd
+    operatingSystem: linux
+    osImage: Ubuntu 20.04.1 LTS
+    systemUUID: ec26490c-6060-dcc5-2ee7-245219eb0727

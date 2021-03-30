@@ -1,0 +1,29 @@
+approved = [
+  "mit",
+  "apache-2.0",
+  "bsd-3-clause",
+  "bsd-2-clause",
+  "mpl-2.0",
+]
+
+ignored = [
+  "github.com/davecgh/go-spew", # ISC license
+  "github.com/gogo/protobuf",
+  "google.golang.org/protobuf",  
+  "github.com/ghodss/yaml",
+  "sigs.k8s.io/yaml", # Forked from above
+  "gopkg.in/fsnotify.v1",
+
+  "github.com/banzaicloud/cluster-registry-controller/api",
+]
+
+[header]
+ignoreFiles = [
+  "*.pb.go",
+  "*.gogen.go",
+  "static/generate.go",
+  "zz_generated.deepcopy.go",
+]
+
+template = """// Copyright (c) :YEAR: Banzai Cloud Zrt. All Rights Reserved.
+"""

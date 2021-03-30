@@ -1,0 +1,189 @@
+apiVersion: v1
+kind: Node
+metadata:
+ annotations:
+   csi.volume.kubernetes.io/nodeid: '{"csi.vsphere.vmware.com":"pke-cloud-vmware01"}'
+   io.cilium.network.ipv4-cilium-host: 10.40.2.111
+   io.cilium.network.ipv4-health-ip: 10.40.2.221
+   io.cilium.network.ipv4-pod-cidr: 10.40.2.0/24
+   kubeadm.alpha.kubernetes.io/cri-socket: unix:///run/containerd/containerd.sock
+   node.alpha.kubernetes.io/ttl: "0"
+   nodepool.banzaicloud.io/managed-labels: '[]'
+   volumes.kubernetes.io/controller-managed-attach-detach: "true"
+ creationTimestamp: "2020-05-19T01:34:09Z"
+ labels:
+   beta.kubernetes.io/arch: amd64
+   beta.kubernetes.io/instance-type: vsphere-vm.cpu-4.mem-12gb.os-ubuntu
+   beta.kubernetes.io/os: linux
+   external-cloud-controller.banzaicloud.com/multi-cloud: vsphere
+   kubernetes.io/arch: amd64
+   kubernetes.io/hostname: pke-cloud-vmware01
+   kubernetes.io/os: linux
+   nodepool.banzaicloud.io/name: vsphere
+ name: pke-cloud-vmware01
+ resourceVersion: "60360416"
+ selfLink: /api/v1/nodes/pke-cloud-vmware01
+ uid: 54e096bc-de2e-4038-bf9c-3045b929b53b
+spec:
+ podCIDR: 10.40.2.0/24
+ podCIDRs:
+ - 10.40.2.0/24
+ providerID: vsphere://4232e3c7-d83c-d72b-758c-71d07a3d9310
+status:
+ addresses:
+ - address: 192.168.22.201
+   type: ExternalIP
+ - address: 192.168.22.201
+   type: InternalIP
+ - address: ubuntu
+   type: Hostname
+ allocatable:
+   cpu: 3850m
+   ephemeral-storage: "15857380527"
+   hugepages-1Gi: "0"
+   hugepages-2Mi: "0"
+   memory: 10305164Ki
+   pods: "110"
+ capacity:
+   cpu: "4"
+   ephemeral-storage: 19536528Ki
+   hugepages-1Gi: "0"
+   hugepages-2Mi: "0"
+   memory: 12296844Ki
+   pods: "110"
+ conditions:
+ - lastHeartbeatTime: "2021-01-22T13:26:12Z"
+   lastTransitionTime: "2021-01-22T13:26:12Z"
+   message: Cilium is running on this node
+   reason: CiliumIsUp
+   status: "False"
+   type: NetworkUnavailable
+ - lastHeartbeatTime: "2021-03-08T23:12:18Z"
+   lastTransitionTime: "2021-01-22T13:25:52Z"
+   message: kubelet has sufficient memory available
+   reason: KubeletHasSufficientMemory
+   status: "False"
+   type: MemoryPressure
+ - lastHeartbeatTime: "2021-03-08T23:12:18Z"
+   lastTransitionTime: "2021-03-04T23:05:54Z"
+   message: kubelet has no disk pressure
+   reason: KubeletHasNoDiskPressure
+   status: "False"
+   type: DiskPressure
+ - lastHeartbeatTime: "2021-03-08T23:12:18Z"
+   lastTransitionTime: "2021-01-22T13:25:52Z"
+   message: kubelet has sufficient PID available
+   reason: KubeletHasSufficientPID
+   status: "False"
+   type: PIDPressure
+ - lastHeartbeatTime: "2021-03-08T23:12:18Z"
+   lastTransitionTime: "2021-01-22T13:25:52Z"
+   message: kubelet is posting ready status. AppArmor enabled
+   reason: KubeletReady
+   status: "True"
+   type: Ready
+ daemonEndpoints:
+   kubeletEndpoint:
+     Port: 10250
+ images:
+ - names:
+   - docker.io/cilium/cilium@sha256:98203d1e8104af65fd5b3c363bcfc163cccd7e2dfbbc912fb03a35f5674edd8a
+   - docker.io/cilium/cilium:v1.6.4
+   sizeBytes: 267919013
+ - names:
+   - docker.io/banzaicloud/hyperkube@sha256:3f371523e3c0f416f530d3e0400ffa274b4abed6cb8d57210dda69200e5d37a0
+   - docker.io/banzaicloud/hyperkube:v1.16.4
+   sizeBytes: 186629719
+ - names:
+   - docker.io/banzaicloud/istio-proxyv2@sha256:64283a8956ac34275c339828d6bf0804eaefbc61f605d2130397e36055cb795a
+   - docker.io/banzaicloud/istio-proxyv2:1.7.2-bzc
+   sizeBytes: 119985964
+ - names:
+   - docker.io/banzaicloud/istio-pilot@sha256:79f64b73fc9d38935a5a44750bbcaf848da2bba33ae494f4887de587e333e593
+   - docker.io/banzaicloud/istio-pilot:1.7.2-bzc
+   sizeBytes: 99764122
+ - names:
+   - gcr.io/cloud-provider-vsphere/csi/release/driver@sha256:fae6806f5423a0099cdf60cf53cff474b228ee4846a242d025e4833a66f91b3f
+   - gcr.io/cloud-provider-vsphere/csi/release/driver:v1.0.1
+   sizeBytes: 75110484
+ - names:
+   - ghcr.io/banzaicloud/istio-proxyv2@sha256:197a7bcb9e8f4ff3353f9b342cbda5c191757308c488ef91eb0a58e9cfbafe94
+   - ghcr.io/banzaicloud/istio-proxyv2:1.8.3-bzc
+   sizeBytes: 69525079
+ - names:
+   - docker.io/prom/prometheus@sha256:ea420f6cd98e4e43e264a7a2e6e27e8328f47aa32d937e0c6e8e3b30fdefe6eb
+   - docker.io/prom/prometheus:v2.24.1
+   sizeBytes: 67230557
+ - names:
+   - ghcr.io/banzaicloud/istio-pilot@sha256:fa2f4320d096f6eb3e53bdc79111dc47a6a95b916fcd73e8d99b79c7c30c923c
+   - ghcr.io/banzaicloud/istio-pilot:1.8.3-bzc
+   sizeBytes: 49093331
+ - names:
+   - docker.io/jaegertracing/all-in-one@sha256:738442983b772a5d413c8a2c44a5563956adaff224e5b38f52a959124dafc119
+   - docker.io/jaegertracing/all-in-one:1.16
+   sizeBytes: 23571671
+ - names:
+   - ghcr.io/banzaicloud/istio-operator@sha256:c6c9e2dfb23e8b1995a433366e7ad7cce5d5a9180ca81f2f64c43c6a53fa3e9a
+   - ghcr.io/banzaicloud/istio-operator:0.8.9
+   sizeBytes: 23458918
+ - names:
+   - gcr.io/kubebuilder/kube-rbac-proxy@sha256:a06e7b56c5e1e63b87abb417344f59bf4a8e53695b8463121537c3854c5fda82
+   - gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+   sizeBytes: 19991086
+ - names:
+   - ghcr.io/banzaicloud/backyards@sha256:3595e4cbd9f080b45850d63a65fecf4d45fb9fb2bfa93080efb7a28b09eaf460
+   - ghcr.io/banzaicloud/backyards:v1.5.6
+   sizeBytes: 19355570
+ - names:
+   - docker.io/metallb/speaker@sha256:2b74eca0f25e946e9a1dc4b94b9da067b1fec4244364d266283dfbbab546a629
+   - docker.io/metallb/speaker:v0.9.3
+   sizeBytes: 19185380
+ - names:
+   - ghcr.io/banzaicloud/canary-operator@sha256:93908cc2af827b94cf4c1737a3b06a14772526dbe4d99ed23c30edb1db5caf25
+   - ghcr.io/banzaicloud/canary-operator:0.1.14
+   sizeBytes: 18812672
+ - names:
+   - docker.io/metallb/controller@sha256:c0c6f8655f9c855bc6e10c9a9975413d253b91063e91732021f07eca140797eb
+   - docker.io/metallb/controller:v0.9.3
+   sizeBytes: 17069940
+ - names:
+   - ghcr.io/banzaicloud/backyards-sre-alert-exporter@sha256:05ddd85cfdaa28a1c61995fb09aab08e0b4f09a807f4bb63d85e14c75170d8dd
+   - ghcr.io/banzaicloud/backyards-sre-alert-exporter:v1.5.6
+   sizeBytes: 15516933
+ - names:
+   - quay.io/prometheus/node-exporter@sha256:a2f29256e53cc3e0b64d7a472512600b2e9410347d53cdc85b49f659c17e02ee
+   - quay.io/prometheus/node-exporter:v0.18.1
+   sizeBytes: 11122661
+ - names:
+   - quay.io/coreos/kube-state-metrics@sha256:0574408a601f029ce325c96f1c4650284ab687f269890fa00abc9d50232bf745
+   - quay.io/coreos/kube-state-metrics:v1.9.4
+   sizeBytes: 10301998
+ - names:
+   - docker.io/waynz0r/allspark@sha256:327f6cb9e3cfc8ed99fe5d6048ef890a7692af4ff99072757ac621c7437d9c26
+   - docker.io/waynz0r/allspark:0.1.2
+   sizeBytes: 8124390
+ - names:
+   - quay.io/k8scsi/csi-node-driver-registrar:v1.1.0
+   sizeBytes: 6939423
+ - names:
+   - quay.io/k8scsi/livenessprobe:v1.1.0
+   sizeBytes: 6690548
+ - names:
+   - quay.io/prometheus-operator/prometheus-config-reloader@sha256:c8f6b2fb77894bc06b6c5257b5935a591ed7e9b6ac0821f9e42bd44193325441
+   - quay.io/prometheus-operator/prometheus-config-reloader:v0.45.0
+   sizeBytes: 4965434
+ - names:
+   - docker.io/banzaicloud/pause@sha256:fcaff905397ba63fd376d0c3019f1f1cb6e7506131389edbcb3d22719f1ae54d
+   - docker.io/banzaicloud/pause:3.1
+   sizeBytes: 325550
+ nodeInfo:
+   architecture: amd64
+   bootID: ce9bf625-e22c-4aa9-a572-dbbcbdb7a546
+   containerRuntimeVersion: containerd://1.2.9
+   kernelVersion: 4.15.0-123-generic
+   kubeProxyVersion: v1.16.4
+   kubeletVersion: v1.16.4
+   machineID: 5207757ccd6544929a6a99ad09b03545
+   operatingSystem: linux
+   osImage: Ubuntu 18.04.3 LTS
+   systemUUID: C7E33242-3CD8-2BD7-758C-71D07A3D9310
