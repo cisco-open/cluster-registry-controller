@@ -146,7 +146,8 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if apierrors.IsNotFound(err) {
 			err = nil
 		}
-		return ctrl.Result{}, nil
+
+		return ctrl.Result{}, err
 	}
 	if err != nil {
 		return ctrl.Result{}, errors.WrapIf(err, "could not get object")
@@ -401,6 +402,7 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj *unstructure
 					gvk = *originalGVK
 				}
 			}
+
 			return []reconcile.Request{
 				{
 					NamespacedName: types.NamespacedName{

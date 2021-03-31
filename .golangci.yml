@@ -36,7 +36,7 @@ linters-settings:
   gomnd:
     settings:
       mnd:
-        checks: [case,condition,operation,return,assign]
+        checks: [case,operation,return,assign]
   gocognit:
     min-complexity: 50
   cyclop:
