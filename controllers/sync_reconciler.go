@@ -5,6 +5,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"emperror.dev/errors"
 	"github.com/go-logr/logr"
@@ -16,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -24,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/banzaicloud/cluster-registry-controller/pkg/clusters"
@@ -34,11 +37,15 @@ import (
 	"github.com/banzaicloud/operator-tools/pkg/resources"
 )
 
-const OwnershipAnnotation = "k8s.cisco.com/resource-owner-cluster-id"
+const (
+	OwnershipAnnotation   = "k8s.cisco.com/resource-owner-cluster-id"
+	OriginalGVKAnnotation = "k8s.cisco.com/original-group-version-kind"
+)
 
 type syncReconciler struct {
 	clusters.ManagedReconciler
 
+	localClusterID  string
 	localMgr        ctrl.Manager
 	localRecorder   record.EventRecorder
 	clustersManager *clusters.Manager
@@ -82,21 +89,68 @@ func (r *syncReconciler) GetRule() *clusterregistryv1alpha1.ResourceSyncRule {
 	return r.rule
 }
 
+func (r *syncReconciler) setLocalClusterID() error {
+	if r.localClusterID == "" {
+		localClusterID, err := GetClusterID(r.GetContext(), r.localMgr.GetClient())
+		if err != nil {
+			return errors.WrapIf(err, "could not get local cluster id")
+		}
+		r.localClusterID = string(localClusterID)
+	}
+
+	return nil
+}
+
+func (r *syncReconciler) parseReqWithGVK(req ctrl.Request) (ctrl.Request, schema.GroupVersionKind, error) {
+	objectGVK := schema.GroupVersionKind{}
+
+	parts := strings.SplitN(req.NamespacedName.Name, "|", 2)
+	if len(parts) != 2 {
+		return ctrl.Request{}, objectGVK, errors.NewWithDetails("could not parse request name", "request", req)
+	}
+	if gvk := util.ParseGVKFromString(parts[0]); gvk != nil {
+		objectGVK = *gvk
+	} else {
+		return ctrl.Request{}, objectGVK, errors.NewWithDetails("could not parse group version kind", "gvk", req.NamespacedName.Name)
+	}
+
+	req.NamespacedName.Name = parts[1]
+
+	return req, objectGVK, nil
+}
+
 func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	log := r.GetLogger().WithValues("resource", req.NamespacedName)
+	err := r.setLocalClusterID()
+	if err != nil {
+		return ctrl.Result{}, errors.WithStackIf(err)
+	}
+
+	req, objectGVK, err := r.parseReqWithGVK(req)
+	if err != nil {
+		return ctrl.Result{}, errors.WithStackIf(err)
+	}
+
+	log := r.GetLogger().WithValues("resource", req.NamespacedName, "gvk", objectGVK)
 
 	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(schema.GroupVersionKind(r.rule.Spec.GVK))
+	obj.SetGroupVersionKind(objectGVK)
+	obj.SetName(req.Name)
+	obj.SetNamespace(req.Namespace)
 
-	err := r.GetManager().GetClient().Get(r.GetContext(), req.NamespacedName, obj)
+	log.Info("reconciling")
+
+	err = r.GetManager().GetClient().Get(r.GetContext(), req.NamespacedName, obj)
 	if apierrors.IsNotFound(err) {
+		log.Info("object was removed, trying to delete")
+		err := r.localMgr.GetClient().Delete(r.GetContext(), obj)
+		if apierrors.IsNotFound(err) {
+			err = nil
+		}
 		return ctrl.Result{}, nil
 	}
 	if err != nil {
 		return ctrl.Result{}, errors.WrapIf(err, "could not get object")
 	}
-
-	log.Info("reconciling")
 
 	if r.rateLimiter != nil {
 		limited, _, err := r.rateLimiter.RateLimit(req.String(), 1)
@@ -164,6 +218,11 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		objAnnotations[OwnershipAnnotation] = r.clusterID
 	}
 
+	if mutated, gvk := matchedRules.GetMutatedGVK(obj.GetObjectKind().GroupVersionKind()); mutated {
+		objAnnotations[OriginalGVKAnnotation] = util.GVKToString(obj.GetObjectKind().GroupVersionKind())
+		obj.SetGroupVersionKind(gvk)
+	}
+
 	delete(objAnnotations, patch.LastAppliedConfig)
 	delete(objAnnotations, corev1.LastAppliedConfigAnnotation)
 	metaObj.SetGeneration(0)
@@ -174,8 +233,6 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	metaObj.SetCreationTimestamp(metav1.Time{})
 
 	metaObj.SetFinalizers(nil)
-
-	obj.SetGroupVersionKind(matchedRules.GetMutatedGVK(obj.GetObjectKind().GroupVersionKind()))
 
 	gvk := resources.ConvertGVK(obj.GetObjectKind().GroupVersionKind())
 	patchFunc, err := resources.PatchYAMLModifier(resources.K8SResourceOverlay{
@@ -195,6 +252,19 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	desiredState := &util.DynamicDesiredState{
+		ShouldCreateFunc: func(desired runtime.Object) (bool, error) {
+			metaObj, err := meta.Accessor(desired)
+			if err != nil {
+				return false, err
+			}
+
+			ownerClusterID := metaObj.GetAnnotations()[OwnershipAnnotation]
+			if r.localClusterID != "" && r.localClusterID == ownerClusterID {
+				return false, nil
+			}
+
+			return true, nil
+		},
 		ShouldUpdateFunc: func(current, desired runtime.Object) (bool, error) {
 			metaObj, err := meta.Accessor(current)
 			if err != nil {
@@ -269,7 +339,18 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 
 	err = ctrl.Watch(&source.Kind{
 		Type: obj,
-	}, &handler.EnqueueRequestForObject{}, NewPredicateFuncs(func(meta metav1.Object, object runtime.Object, t string) bool {
+	}, &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(obj handler.MapObject) []reconcile.Request {
+			return []reconcile.Request{
+				{
+					NamespacedName: types.NamespacedName{
+						Name:      fmt.Sprintf("%s|%s", util.GVKToString(obj.Object.GetObjectKind().GroupVersionKind()), obj.Meta.GetName()),
+						Namespace: obj.Meta.GetNamespace(),
+					},
+				},
+			}
+		}),
+	}, NewPredicateFuncs(func(meta metav1.Object, object runtime.Object, t string) bool {
 		object.GetObjectKind().SetGroupVersionKind(gvk)
 		ok, _, err := r.rule.Match(object)
 		if err != nil {
@@ -312,7 +393,24 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj *unstructure
 
 	err = r.ctrl.Watch(&source.Informer{
 		Informer: localInformer,
-	}, &handler.EnqueueRequestForObject{}, r.localPredicate())
+	}, &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(obj handler.MapObject) []reconcile.Request {
+			gvk := obj.Object.GetObjectKind().GroupVersionKind()
+			if ann := obj.Meta.GetAnnotations(); len(ann) > 0 && ann[OriginalGVKAnnotation] != "" {
+				if originalGVK := util.ParseGVKFromString(ann[OriginalGVKAnnotation]); originalGVK != nil {
+					gvk = *originalGVK
+				}
+			}
+			return []reconcile.Request{
+				{
+					NamespacedName: types.NamespacedName{
+						Name:      fmt.Sprintf("%s|%s", util.GVKToString(gvk), obj.Meta.GetName()),
+						Namespace: obj.Meta.GetNamespace(),
+					},
+				},
+			}
+		}),
+	}, r.localPredicate())
 	if err != nil {
 		return errors.WrapIf(err, "could not create watch for local informer")
 	}

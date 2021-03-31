@@ -74,7 +74,10 @@ func (c *managedController) Start(ctx context.Context, mgr ctrl.Manager) error {
 	c.reconciler.SetLogger(c.log)
 
 	var err error
-	c.ctrl, err = controller.NewUnmanaged(c.GetName(), c.mgr, controller.Options{Reconciler: c.reconciler})
+	c.ctrl, err = controller.NewUnmanaged(c.GetName(), c.mgr, controller.Options{
+		Reconciler: c.reconciler,
+		Log:        c.log,
+	})
 	if err != nil {
 		return err
 	}
