@@ -100,7 +100,7 @@ func (s DynamicDesiredState) BeforeDelete(current runtime.Object) error {
 	return nil
 }
 
-func (s DynamicDesiredState) GetCreateptions() []runtimeClient.CreateOption {
+func (s DynamicDesiredState) GetCreateOptions() []runtimeClient.CreateOption {
 	return s.CreateOptions
 }
 

@@ -79,7 +79,7 @@ func (c *managedController) Start(ctx context.Context, mgr ctrl.Manager) error {
 		Log:        c.log,
 	})
 	if err != nil {
-		return err
+		return errors.WithStackIf(err)
 	}
 
 	err = c.reconciler.SetupWithController(c.ctrlContext, c.ctrl)
@@ -103,6 +103,14 @@ func (c *managedController) Start(ctx context.Context, mgr ctrl.Manager) error {
 		// Start our controller. This will block until the stop channel is closed, or the
 		// controller returns an error.
 		c.log.Info("starting ctrl")
+
+		err = c.reconciler.Start()
+		if err != nil {
+			c.log.Error(err, "")
+
+			return
+		}
+
 		if err := c.ctrl.Start(c.ctrlContext.Done()); err != nil {
 			c.log.Error(err, "cannot run sync controller")
 		}

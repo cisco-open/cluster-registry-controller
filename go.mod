@@ -4,11 +4,12 @@ go 1.15
 
 require (
 	emperror.dev/errors v0.8.0
-	github.com/banzaicloud/cluster-registry v0.0.0-20210331211631-04e50ee844bd
+	github.com/banzaicloud/cluster-registry v0.0.0-20210401194444-03a7de496d0f
 	github.com/banzaicloud/k8s-objectmatcher v1.5.0
 	github.com/banzaicloud/operator-tools v0.21.0
 	github.com/go-logr/logr v0.2.1
 	github.com/go-logr/zapr v0.2.0 // indirect
+	github.com/gomodule/redigo v1.8.4 // indirect
 	github.com/onsi/ginkgo v1.15.1
 	github.com/onsi/gomega v1.10.1
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
@@ -23,7 +24,6 @@ require (
 	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v0.19.7
 	sigs.k8s.io/controller-runtime v0.6.5
-	sigs.k8s.io/yaml v1.2.0
 )
 
 replace github.com/banzaicloud/cluster-registry-controller/static => ./static

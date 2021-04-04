@@ -5,7 +5,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"emperror.dev/errors"
 	"github.com/go-logr/logr"
@@ -37,14 +36,11 @@ import (
 	"github.com/banzaicloud/operator-tools/pkg/resources"
 )
 
-const (
-	OwnershipAnnotation   = "k8s.cisco.com/resource-owner-cluster-id"
-	OriginalGVKAnnotation = "k8s.cisco.com/original-group-version-kind"
-)
-
 type syncReconciler struct {
 	clusters.ManagedReconciler
 
+	gvk             schema.GroupVersionKind
+	localGVK        schema.GroupVersionKind
 	localClusterID  string
 	localMgr        ctrl.Manager
 	localRecorder   record.EventRecorder
@@ -70,6 +66,7 @@ func NewSyncReconciler(name string, localMgr ctrl.Manager, rule *clusterregistry
 	r := &syncReconciler{
 		ManagedReconciler: clusters.NewManagedReconciler(name, log),
 
+		gvk:             schema.GroupVersionKind(rule.Spec.GVK),
 		localMgr:        localMgr,
 		localRecorder:   localMgr.GetEventRecorderFor("cluster-controller"),
 		clustersManager: clustersManager,
@@ -78,6 +75,8 @@ func NewSyncReconciler(name string, localMgr ctrl.Manager, rule *clusterregistry
 		localInformers:  make(map[string]struct{}),
 	}
 
+	_, r.localGVK = clusterregistryv1alpha1.MatchedRules(rule.Spec.Rules).GetMutatedGVK(r.gvk)
+
 	for _, opt := range opts {
 		opt(r)
 	}
@@ -85,69 +84,19 @@ func NewSyncReconciler(name string, localMgr ctrl.Manager, rule *clusterregistry
 	return r, nil
 }
 
-func (r *syncReconciler) GetRule() *clusterregistryv1alpha1.ResourceSyncRule {
-	return r.rule
-}
-
-func (r *syncReconciler) setLocalClusterID() error {
-	if r.localClusterID == "" {
-		localClusterID, err := GetClusterID(r.GetContext(), r.localMgr.GetClient())
-		if err != nil {
-			return errors.WrapIf(err, "could not get local cluster id")
-		}
-		r.localClusterID = string(localClusterID)
-	}
-
-	return nil
-}
-
-func (r *syncReconciler) parseReqWithGVK(req ctrl.Request) (ctrl.Request, schema.GroupVersionKind, error) {
-	objectGVK := schema.GroupVersionKind{}
-
-	parts := strings.SplitN(req.NamespacedName.Name, "|", 2)
-	if len(parts) != 2 {
-		return ctrl.Request{}, objectGVK, errors.NewWithDetails("could not parse request name", "request", req)
-	}
-	if gvk := util.ParseGVKFromString(parts[0]); gvk != nil {
-		objectGVK = *gvk
-	} else {
-		return ctrl.Request{}, objectGVK, errors.NewWithDetails("could not parse group version kind", "gvk", req.NamespacedName.Name)
-	}
-
-	req.NamespacedName.Name = parts[1]
-
-	return req, objectGVK, nil
-}
-
 func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	err := r.setLocalClusterID()
-	if err != nil {
-		return ctrl.Result{}, errors.WithStackIf(err)
-	}
-
-	req, objectGVK, err := r.parseReqWithGVK(req)
-	if err != nil {
-		return ctrl.Result{}, errors.WithStackIf(err)
-	}
-
-	log := r.GetLogger().WithValues("resource", req.NamespacedName, "gvk", objectGVK)
+	log := r.GetLogger().WithValues("resource", req.NamespacedName)
 
 	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(objectGVK)
+	obj.SetGroupVersionKind(r.gvk)
 	obj.SetName(req.Name)
 	obj.SetNamespace(req.Namespace)
 
-	log.Info("reconciling")
+	log.Info("reconciling", "gvk", r.gvk)
 
-	err = r.GetManager().GetClient().Get(r.GetContext(), req.NamespacedName, obj)
+	err := r.GetManager().GetClient().Get(r.GetContext(), req.NamespacedName, obj)
 	if apierrors.IsNotFound(err) {
-		log.Info("object was removed, trying to delete")
-		err := r.localMgr.GetClient().Delete(r.GetContext(), obj)
-		if apierrors.IsNotFound(err) {
-			err = nil
-		}
-
-		return ctrl.Result{}, err
+		return ctrl.Result{}, r.deleteResource(obj, log)
 	}
 	if err != nil {
 		return ctrl.Result{}, errors.WrapIf(err, "could not get object")
@@ -175,6 +124,11 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, errors.WrapIf(err, "could not match object")
 	}
 
+	obj, err = r.mutateObject(obj, matchedRules)
+	if err != nil {
+		return ctrl.Result{}, errors.WrapIf(err, "could not mutate object")
+	}
+
 	rec := reconciler.NewGenericReconciler(
 		r.localMgr.GetClient(),
 		log,
@@ -184,106 +138,8 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		},
 	)
 
-	metaObj, err := meta.Accessor(obj)
-	if err != nil {
-		return ctrl.Result{}, errors.WrapIf(err, "could not get meta for object")
-	}
-
-	objAnnotations := metaObj.GetAnnotations()
-	if objAnnotations == nil {
-		objAnnotations = make(map[string]string)
-	}
-
-	for k, v := range matchedRules.GetMutationAnnotations().Add {
-		objAnnotations[k] = v
-	}
-
-	for _, k := range matchedRules.GetMutationAnnotations().Remove {
-		delete(objAnnotations, k)
-	}
-
-	objLabels := metaObj.GetLabels()
-	if objLabels == nil {
-		objLabels = make(map[string]string)
-	}
-
-	for k, v := range matchedRules.GetMutationLabels().Add {
-		objLabels[k] = v
-	}
-
-	for _, k := range matchedRules.GetMutationLabels().Remove {
-		delete(objLabels, k)
-	}
-
-	if objAnnotations[OwnershipAnnotation] == "" {
-		objAnnotations[OwnershipAnnotation] = r.clusterID
-	}
-
-	if mutated, gvk := matchedRules.GetMutatedGVK(obj.GetObjectKind().GroupVersionKind()); mutated {
-		objAnnotations[OriginalGVKAnnotation] = util.GVKToString(obj.GetObjectKind().GroupVersionKind())
-		obj.SetGroupVersionKind(gvk)
-	}
-
-	delete(objAnnotations, patch.LastAppliedConfig)
-	delete(objAnnotations, corev1.LastAppliedConfigAnnotation)
-	metaObj.SetGeneration(0)
-	metaObj.SetAnnotations(objAnnotations)
-	metaObj.SetResourceVersion("")
-	metaObj.SetUID("")
-	metaObj.SetSelfLink("")
-	metaObj.SetCreationTimestamp(metav1.Time{})
-
-	metaObj.SetFinalizers(nil)
-
-	gvk := resources.ConvertGVK(obj.GetObjectKind().GroupVersionKind())
-	patchFunc, err := resources.PatchYAMLModifier(resources.K8SResourceOverlay{
-		GVK:     &gvk,
-		Patches: matchedRules.GetMutationOverrides(),
-	}, resources.NewObjectParser(r.GetManager().GetScheme()))
-	if err != nil {
-		return ctrl.Result{}, errors.WrapIf(err, "could not get patch func for object")
-	}
-
-	patchedObject, err := patchFunc(obj)
-	if err != nil {
-		return ctrl.Result{}, errors.WrapIf(err, "could not patch object")
-	}
-	if obj, ok = patchedObject.(*unstructured.Unstructured); !ok {
-		return ctrl.Result{}, errors.New("invalid object")
-	}
-
-	desiredState := &util.DynamicDesiredState{
-		ShouldCreateFunc: func(desired runtime.Object) (bool, error) {
-			metaObj, err := meta.Accessor(desired)
-			if err != nil {
-				return false, err
-			}
-
-			ownerClusterID := metaObj.GetAnnotations()[OwnershipAnnotation]
-			if r.localClusterID != "" && r.localClusterID == ownerClusterID {
-				return false, nil
-			}
-
-			return true, nil
-		},
-		ShouldUpdateFunc: func(current, desired runtime.Object) (bool, error) {
-			metaObj, err := meta.Accessor(current)
-			if err != nil {
-				return false, err
-			}
-
-			ownerClusterID := metaObj.GetAnnotations()[OwnershipAnnotation]
-			if ownerClusterID == "" || (r.clustersManager.GetAliveClustersByID()[ownerClusterID] != nil && r.clusterID != ownerClusterID) {
-				return false, nil
-			}
-
-			return true, nil
-		},
-	}
-
 	desiredObject := obj.DeepCopy()
-
-	_, err = rec.ReconcileResource(obj, desiredState)
+	_, err = rec.ReconcileResource(obj, r.getObjectDesiredState())
 	if apierrors.IsAlreadyExists(errors.Cause(err)) {
 		log.Info("object already exists, requeue")
 
@@ -296,18 +152,22 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	log.Info("object reconciled")
 
+	err = r.localMgr.GetClient().Get(r.GetContext(), client.ObjectKey{
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
+	}, obj)
+	if apierrors.IsNotFound(err) {
+		return ctrl.Result{}, nil
+	}
+	if err != nil {
+		return ctrl.Result{}, errors.WrapIf(err, "could not get object")
+	}
+
 	if r.rule.UID != "" {
 		r.localRecorder.Event(r.rule, corev1.EventTypeNormal, "ObjectReconciled", fmt.Sprintf("object reconciled (resource: %s)", req))
 	}
 
 	if matchedRules.GetMutationSyncStatus() {
-		err = r.localMgr.GetClient().Get(r.GetContext(), client.ObjectKey{
-			Name:      obj.GetName(),
-			Namespace: obj.GetNamespace(),
-		}, obj)
-		if err != nil {
-			return ctrl.Result{}, errors.WrapIf(err, "could not get object")
-		}
 		desiredObject.SetResourceVersion(obj.GetResourceVersion())
 		err = r.localMgr.GetClient().Status().Update(r.GetContext(), desiredObject)
 		if err != nil {
@@ -315,16 +175,31 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	err = r.initLocalInformer(r.GetContext(), desiredObject)
-	if err != nil {
-		return ctrl.Result{}, errors.WithStackIf(err)
-	}
-
 	return ctrl.Result{}, nil
 }
 
-func (r *syncReconciler) setQueue(q workqueue.RateLimitingInterface) {
-	r.queue = q
+func (r *syncReconciler) Start() error {
+	// set local cluster id
+	if r.localClusterID == "" {
+		localClusterID, err := GetClusterID(r.GetContext(), r.localMgr.GetClient())
+		if err != nil {
+			return errors.WrapIf(err, "could not get local cluster id")
+		}
+		r.localClusterID = string(localClusterID)
+		r.GetLogger().Info("set local cluster id", "id", r.localClusterID)
+	}
+
+	// init local informer
+	_, gvk := clusterregistryv1alpha1.MatchedRules(r.rule.Spec.Rules).GetMutatedGVK(schema.GroupVersionKind(r.rule.Spec.GVK))
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(gvk)
+
+	err := r.initLocalInformer(r.GetContext(), obj)
+	if err != nil {
+		return errors.WithStackIf(err)
+	}
+
+	return nil
 }
 
 func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controller.Controller) error {
@@ -338,6 +213,7 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 	obj := &unstructured.Unstructured{}
 	obj.SetGroupVersionKind(gvk)
 
+	// set watcher for gvk
 	err = ctrl.Watch(&source.Kind{
 		Type: obj,
 	}, &handler.EnqueueRequestsFromMapFunc{
@@ -345,13 +221,13 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 			return []reconcile.Request{
 				{
 					NamespacedName: types.NamespacedName{
-						Name:      fmt.Sprintf("%s|%s", util.GVKToString(obj.Object.GetObjectKind().GroupVersionKind()), obj.Meta.GetName()),
+						Name:      obj.Meta.GetName(),
 						Namespace: obj.Meta.GetNamespace(),
 					},
 				},
 			}
 		}),
-	}, NewPredicateFuncs(func(meta metav1.Object, object runtime.Object, t string) bool {
+	}, predicate.NewPredicateFuncs(func(meta metav1.Object, object runtime.Object) bool {
 		object.GetObjectKind().SetGroupVersionKind(gvk)
 		ok, _, err := r.rule.Match(object)
 		if err != nil {
@@ -378,6 +254,168 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 	return nil
 }
 
+func (r *syncReconciler) GetRule() *clusterregistryv1alpha1.ResourceSyncRule {
+	return r.rule
+}
+
+func (r *syncReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+	return r.ManagedReconciler.SetupWithManager(ctx, mgr)
+}
+
+func (r *syncReconciler) mutateObject(current *unstructured.Unstructured, matchedRules clusterregistryv1alpha1.MatchedRules) (*unstructured.Unstructured, error) {
+	var ok bool
+
+	obj := current.DeepCopy()
+
+	objAnnotations := obj.GetAnnotations()
+	if objAnnotations == nil {
+		objAnnotations = make(map[string]string)
+	}
+
+	for k, v := range matchedRules.GetMutationAnnotations().Add {
+		objAnnotations[k] = v
+	}
+
+	for _, k := range matchedRules.GetMutationAnnotations().Remove {
+		delete(objAnnotations, k)
+	}
+
+	objLabels := obj.GetLabels()
+	if objLabels == nil {
+		objLabels = make(map[string]string)
+	}
+
+	for k, v := range matchedRules.GetMutationLabels().Add {
+		objLabels[k] = v
+	}
+
+	for _, k := range matchedRules.GetMutationLabels().Remove {
+		delete(objLabels, k)
+	}
+
+	if objAnnotations[clusterregistryv1alpha1.OwnershipAnnotation] == "" {
+		objAnnotations[clusterregistryv1alpha1.OwnershipAnnotation] = r.clusterID
+	}
+
+	if mutated, gvk := matchedRules.GetMutatedGVK(obj.GetObjectKind().GroupVersionKind()); mutated {
+		objAnnotations[clusterregistryv1alpha1.OriginalGVKAnnotation] = util.GVKToString(obj.GetObjectKind().GroupVersionKind())
+		obj.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	delete(objAnnotations, patch.LastAppliedConfig)
+	delete(objAnnotations, corev1.LastAppliedConfigAnnotation)
+	obj.SetAnnotations(objAnnotations)
+
+	obj.SetGeneration(0)
+	obj.SetResourceVersion("")
+	obj.SetUID("")
+	obj.SetSelfLink("")
+	obj.SetCreationTimestamp(metav1.Time{})
+	obj.SetFinalizers(nil)
+
+	gvk := resources.ConvertGVK(obj.GetObjectKind().GroupVersionKind())
+	patchFunc, err := resources.PatchYAMLModifier(resources.K8SResourceOverlay{
+		GVK:     &gvk,
+		Patches: matchedRules.GetMutationOverrides(),
+	}, resources.NewObjectParser(r.GetManager().GetScheme()))
+	if err != nil {
+		return nil, errors.WrapIf(err, "could not get patch func for object")
+	}
+
+	patchedObject, err := patchFunc(obj)
+	if err != nil {
+		return nil, errors.WrapIf(err, "could not patch object")
+	}
+
+	if obj, ok = patchedObject.(*unstructured.Unstructured); !ok {
+		return nil, errors.New("invalid object")
+	}
+
+	return obj, nil
+}
+
+func (r *syncReconciler) deleteResource(obj *unstructured.Unstructured, log logr.Logger) error {
+	log.Info("object was removed, trying to delete locally as well")
+
+	object := obj.DeepCopy()
+	object.SetGroupVersionKind(r.localGVK)
+	current := object.DeepCopy()
+	err := r.localMgr.GetClient().Get(r.GetContext(), types.NamespacedName{
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
+	}, current)
+	if apierrors.IsNotFound(err) { // already deleted
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	ownerClusterID := current.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
+
+	if ownerClusterID == "" {
+		log.Info("deletion is skipped, object is owned by this cluster")
+
+		return nil
+	}
+
+	if r.isOwnedByAnotherAliveCluster(ownerClusterID) {
+		log.Info("deletion is skipped, owned by another live cluster")
+
+		return nil
+	}
+
+	err = r.localMgr.GetClient().Delete(r.GetContext(), object)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	return nil
+}
+
+func (r *syncReconciler) isOwnedByAnotherAliveCluster(ownerClusterID string) bool {
+	return ownerClusterID != "" && r.clustersManager.GetAliveClustersByID()[ownerClusterID] != nil && ownerClusterID != r.clusterID
+}
+
+func (r *syncReconciler) getObjectDesiredState() *util.DynamicDesiredState {
+	return &util.DynamicDesiredState{
+		ShouldCreateFunc: func(desired runtime.Object) (bool, error) {
+			metaObj, err := meta.Accessor(desired)
+			if err != nil {
+				return false, err
+			}
+
+			ownerClusterID := metaObj.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
+			if ownerClusterID != "" && r.localClusterID == ownerClusterID {
+				return false, nil
+			}
+
+			if r.isOwnedByAnotherAliveCluster(ownerClusterID) {
+				return false, nil
+			}
+
+			return true, nil
+		},
+		ShouldUpdateFunc: func(current, desired runtime.Object) (bool, error) {
+			metaObj, err := meta.Accessor(current)
+			if err != nil {
+				return false, err
+			}
+
+			ownerClusterID := metaObj.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
+			if ownerClusterID == "" || (r.clustersManager.GetAliveClustersByID()[ownerClusterID] != nil && r.clusterID != ownerClusterID) {
+				return false, nil
+			}
+
+			return true, nil
+		},
+	}
+}
+
+func (r *syncReconciler) setQueue(q workqueue.RateLimitingInterface) {
+	r.queue = q
+}
+
 func (r *syncReconciler) initLocalInformer(ctx context.Context, obj *unstructured.Unstructured) error {
 	key := obj.GetObjectKind().GroupVersionKind().String()
 
@@ -396,17 +434,10 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj *unstructure
 		Informer: localInformer,
 	}, &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(obj handler.MapObject) []reconcile.Request {
-			gvk := obj.Object.GetObjectKind().GroupVersionKind()
-			if ann := obj.Meta.GetAnnotations(); len(ann) > 0 && ann[OriginalGVKAnnotation] != "" {
-				if originalGVK := util.ParseGVKFromString(ann[OriginalGVKAnnotation]); originalGVK != nil {
-					gvk = *originalGVK
-				}
-			}
-
 			return []reconcile.Request{
 				{
 					NamespacedName: types.NamespacedName{
-						Name:      fmt.Sprintf("%s|%s", util.GVKToString(gvk), obj.Meta.GetName()),
+						Name:      obj.Meta.GetName(),
 						Namespace: obj.Meta.GetNamespace(),
 					},
 				},
@@ -425,15 +456,17 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj *unstructure
 func (r *syncReconciler) localPredicate() predicate.Funcs {
 	return predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
-			return false
+			_, ok := e.Meta.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
+
+			return ok
 		},
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			_, ok := e.MetaOld.GetAnnotations()[OwnershipAnnotation]
+			_, ok := e.MetaOld.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
 
 			return ok
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			_, ok := e.Meta.GetAnnotations()[OwnershipAnnotation]
+			_, ok := e.Meta.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
 
 			return ok
 		},
@@ -441,8 +474,4 @@ func (r *syncReconciler) localPredicate() predicate.Funcs {
 			return false
 		},
 	}
-}
-
-func (r *syncReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	return r.ManagedReconciler.SetupWithManager(ctx, mgr)
 }
