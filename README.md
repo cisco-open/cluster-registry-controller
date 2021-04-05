@@ -1,0 +1,1 @@
+# Cluster registry controller
