@@ -386,10 +386,12 @@ func (r *syncReconciler) getObjectDesiredState() *util.DynamicDesiredState {
 			}
 
 			ownerClusterID := metaObj.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
+			// the resource is coming from through an intermediary but marked as owned by this cluster
 			if ownerClusterID != "" && r.localClusterID == ownerClusterID {
 				return false, nil
 			}
 
+			// this resource is owned by another live cluster - sync allowed only from that cluster
 			if r.isOwnedByAnotherAliveCluster(ownerClusterID) {
 				return false, nil
 			}
@@ -402,8 +404,19 @@ func (r *syncReconciler) getObjectDesiredState() *util.DynamicDesiredState {
 				return false, err
 			}
 
+			// sync disabled for this resource
+			if _, ok := metaObj.GetAnnotations()[clusterregistryv1alpha1.SyncDisabledAnnotation]; ok {
+				return false, nil
+			}
+
+			// this resources is owned by this cluster
 			ownerClusterID := metaObj.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
-			if ownerClusterID == "" || (r.clustersManager.GetAliveClustersByID()[ownerClusterID] != nil && r.clusterID != ownerClusterID) {
+			if ownerClusterID == "" {
+				return false, nil
+			}
+
+			// this resource is owned by another live cluster - sync is only allowed from that cluster
+			if r.isOwnedByAnotherAliveCluster(ownerClusterID) {
 				return false, nil
 			}
 

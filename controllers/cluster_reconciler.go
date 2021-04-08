@@ -5,6 +5,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	"emperror.dev/errors"
@@ -19,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -98,18 +100,32 @@ func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	currentConditions := GetCurrentConditions(cluster)
 
 	var reconcileError error
-	if isClusterLocal {
-		reconcileError = r.reconcileLocalCluster(r.GetContext(), cluster, currentConditions)
-	} else {
-		reconcileError = r.reconcileRemoteCluster(r.GetContext(), cluster, currentConditions)
-	}
+	if _, ok := cluster.GetAnnotations()[clusterregistryv1alpha1.ClusterDisabledAnnotation]; ok {
+		removeErr := r.removeRemoteCluster(cluster.Name)
+		if removeErr != nil && !errors.Is(errors.Cause(removeErr), clusters.ErrClusterNotFound) {
+			return ctrl.Result{}, errors.WithStackIf(removeErr)
+		}
 
-	SetCondition(cluster, currentConditions, ClusterReadyCondition(err), r.GetRecorder())
+		cluster.Status = cluster.Status.Reset()
+		cluster.Status.State = clusterregistryv1alpha1.ClusterStateDisabled
+		currentConditions = ClusterConditionsMap{}
+		err = UpdateCluster(r.GetContext(), reconcileError, r.GetManager().GetClient(), cluster, currentConditions, log)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else {
+		if isClusterLocal {
+			reconcileError = r.reconcileLocalCluster(r.GetContext(), cluster, currentConditions)
+		} else {
+			reconcileError = r.reconcileRemoteCluster(r.GetContext(), cluster, currentConditions)
+		}
+
+		SetCondition(cluster, currentConditions, ClusterReadyCondition(err), r.GetRecorder())
+	}
 
 	if isClusterLocal || reconcileError != nil {
 		// status needs to be updated if the cluster is local or if there was any error setting up a remote cluster instance
-		log.Info("update cluster status")
-		err = UpdateCluster(r.GetContext(), reconcileError, r.GetManager().GetClient(), cluster, currentConditions, r.GetLogger())
+		err = UpdateCluster(r.GetContext(), reconcileError, r.GetManager().GetClient(), cluster, currentConditions, log)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -363,7 +379,17 @@ func (r *ClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manag
 			Kind:       "Cluster",
 			APIVersion: clusterregistryv1alpha1.SchemeBuilder.GroupVersion.String(),
 		},
-	}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+	}, builder.WithPredicates(predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			if e.MetaNew.GetGeneration() != e.MetaOld.GetGeneration() {
+				return true
+			}
+			if !reflect.DeepEqual(e.MetaOld.GetAnnotations(), e.MetaNew.GetAnnotations()) {
+				return true
+			}
+			return false
+		},
+	})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: r.config.ClusterController.WorkerCount,
 		}).

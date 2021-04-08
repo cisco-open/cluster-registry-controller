@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	emperror.dev/errors v0.8.0
-	github.com/banzaicloud/cluster-registry v0.0.0-20210401194444-03a7de496d0f
+	github.com/banzaicloud/cluster-registry v0.0.0-20210408202748-0ca595389ef1
 	github.com/banzaicloud/k8s-objectmatcher v1.5.0
 	github.com/banzaicloud/operator-tools v0.21.0
 	github.com/go-logr/logr v0.2.1

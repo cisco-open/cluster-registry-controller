@@ -81,7 +81,7 @@ func UpdateCluster(ctx context.Context, reconcileError error, c client.Client, c
 			cluster.Status.State = clusterregistryv1alpha1.ClusterStateFailed
 		}
 		cluster.Status.Message = reconcileError.Error()
-		updateErr := UpdateClusterStatus(ctx, c, cluster)
+		updateErr := UpdateClusterStatus(ctx, c, cluster, log)
 		if updateErr != nil {
 			log.Error(updateErr, "could not update resource status")
 		}
@@ -94,7 +94,7 @@ func UpdateCluster(ctx context.Context, reconcileError error, c client.Client, c
 		return reconcileError
 	}
 
-	err := UpdateClusterStatus(ctx, c, cluster)
+	err := UpdateClusterStatus(ctx, c, cluster, log)
 	if err != nil {
 		return errors.WithStackIf(err)
 	}
@@ -102,7 +102,11 @@ func UpdateCluster(ctx context.Context, reconcileError error, c client.Client, c
 	return nil
 }
 
-func UpdateClusterStatus(ctx context.Context, c client.Client, cluster *clusterregistryv1alpha1.Cluster) error {
+func UpdateClusterStatus(ctx context.Context, c client.Client, cluster *clusterregistryv1alpha1.Cluster, log logr.Logger) error {
+	desired := cluster.DeepCopy()
+
+	log.Info("update cluster status")
+
 	err := c.Status().Update(ctx, cluster)
 	if apierrors.IsConflict(err) {
 		current := cluster.DeepCopy()
@@ -112,8 +116,8 @@ func UpdateClusterStatus(ctx context.Context, c client.Client, cluster *clusterr
 		if err != nil {
 			return errors.WrapIf(err, "could not get cluster")
 		}
-		cluster.SetResourceVersion(current.GetResourceVersion())
-		err = c.Status().Update(ctx, cluster)
+		desired.SetResourceVersion(current.GetResourceVersion())
+		err = c.Status().Update(ctx, desired)
 		if err != nil {
 			return errors.WrapIf(err, "could not update cluster status")
 		}
