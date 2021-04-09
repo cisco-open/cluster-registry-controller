@@ -100,7 +100,7 @@ func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	currentConditions := GetCurrentConditions(cluster)
 
 	var reconcileError error
-	if _, ok := cluster.GetAnnotations()[clusterregistryv1alpha1.ClusterDisabledAnnotation]; ok {
+	if _, ok := cluster.GetAnnotations()[clusterregistryv1alpha1.ClusterDisabledAnnotation]; ok { //nolint:nestif
 		removeErr := r.removeRemoteCluster(cluster.Name)
 		if removeErr != nil && !errors.Is(errors.Cause(removeErr), clusters.ErrClusterNotFound) {
 			return ctrl.Result{}, errors.WithStackIf(removeErr)
@@ -387,6 +387,7 @@ func (r *ClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manag
 			if !reflect.DeepEqual(e.MetaOld.GetAnnotations(), e.MetaNew.GetAnnotations()) {
 				return true
 			}
+
 			return false
 		},
 	})).
