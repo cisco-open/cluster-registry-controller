@@ -15,8 +15,8 @@ podSecurityContext:
 securityContext:
   allowPrivilegeEscalation: false
 image:
-  repository: banzaicloud/cluster-registry-controller
-  tag: v0.0.1
+  repository: ghcr.io/banzaicloud/cluster-registry-controller
+  tag: v0.0.2
   pullPolicy: IfNotPresent
 
 nodeSelector: {}
