@@ -5,6 +5,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"emperror.dev/errors"
 	"github.com/go-logr/logr"
@@ -85,6 +86,21 @@ func NewSyncReconciler(name string, localMgr ctrl.Manager, rule *clusterregistry
 }
 
 func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+	result, err := r.reconcile(req)
+	if err != nil {
+		r.localRecorder.Event(r.rule, corev1.EventTypeWarning, "ObjectNotReconciled", fmt.Sprintf("could not reconcile (resource: %s): %s", req, err.Error()))
+
+		return result, err
+	}
+
+	if r.rule.UID != "" {
+		r.localRecorder.Event(r.rule, corev1.EventTypeNormal, "ObjectReconciled", fmt.Sprintf("object reconciled (resource: %s)", req))
+	}
+
+	return result, nil
+}
+
+func (r *syncReconciler) reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log := r.GetLogger().WithValues("resource", req.NamespacedName)
 
 	obj := &unstructured.Unstructured{}
@@ -93,6 +109,26 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	obj.SetNamespace(req.Namespace)
 
 	log.Info("reconciling", "gvk", r.gvk)
+
+	// check namespace existence
+	if req.Namespace != "" {
+		err := r.localMgr.GetClient().Get(r.GetContext(), types.NamespacedName{
+			Name: req.Namespace,
+		}, &corev1.Namespace{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
+
+		if apierrors.IsNotFound(err) {
+			msg := fmt.Sprintf("namespace does not exists locally")
+			r.localRecorder.Event(r.rule, corev1.EventTypeWarning, "ObjectNotReconciledMissingNamespace", fmt.Sprintf("could not reconcile (resource: %s): %s", req, msg))
+			log.Info(msg)
+
+			return ctrl.Result{
+				RequeueAfter: time.Second * 30,
+			}, nil
+		}
+	}
 
 	err := r.GetManager().GetClient().Get(r.GetContext(), req.NamespacedName, obj)
 	if apierrors.IsNotFound(err) {
@@ -161,10 +197,6 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	if err != nil {
 		return ctrl.Result{}, errors.WrapIf(err, "could not get object")
-	}
-
-	if r.rule.UID != "" {
-		r.localRecorder.Event(r.rule, corev1.EventTypeNormal, "ObjectReconciled", fmt.Sprintf("object reconciled (resource: %s)", req))
 	}
 
 	if matchedRules.GetMutationSyncStatus() {
