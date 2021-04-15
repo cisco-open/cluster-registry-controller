@@ -93,10 +93,6 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return result, err
 	}
 
-	if r.rule.UID != "" {
-		r.localRecorder.Event(r.rule, corev1.EventTypeNormal, "ObjectReconciled", fmt.Sprintf("object reconciled (resource: %s)", req))
-	}
-
 	return result, nil
 }
 
@@ -205,6 +201,10 @@ func (r *syncReconciler) reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err != nil {
 			return ctrl.Result{}, errors.WrapIf(err, "could not update object status")
 		}
+	}
+
+	if r.rule.UID != "" {
+		r.localRecorder.Event(r.rule, corev1.EventTypeNormal, "ObjectReconciled", fmt.Sprintf("object reconciled (resource: %s)", req))
 	}
 
 	return ctrl.Result{}, nil
