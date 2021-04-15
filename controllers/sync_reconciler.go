@@ -120,12 +120,12 @@ func (r *syncReconciler) reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		if apierrors.IsNotFound(err) {
-			msg := fmt.Sprintf("namespace does not exists locally")
+			msg := "namespace does not exists locally"
 			r.localRecorder.Event(r.rule, corev1.EventTypeWarning, "ObjectNotReconciledMissingNamespace", fmt.Sprintf("could not reconcile (resource: %s): %s", req, msg))
 			log.Info(msg)
 
 			return ctrl.Result{
-				RequeueAfter: time.Second * 30,
+				RequeueAfter: time.Second * 30, //nolint:gomnd
 			}, nil
 		}
 	}
