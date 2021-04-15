@@ -349,7 +349,7 @@ func (r *syncReconciler) mutateObject(current *unstructured.Unstructured, matche
 	patchFunc, err := resources.PatchYAMLModifier(resources.K8SResourceOverlay{
 		GVK:     &gvk,
 		Patches: matchedRules.GetMutationOverrides(),
-	}, resources.NewObjectParser(r.GetManager().GetScheme()))
+	}, resources.NewObjectParser(runtime.NewScheme()))
 	if err != nil {
 		return nil, errors.WrapIf(err, "could not get patch func for object")
 	}
