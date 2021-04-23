@@ -20,6 +20,7 @@ def pipelinesettings = [
   helmS3Private: 1,
   publishContainer: 1,
   ciscoContainer: 1,
+  artifactory: 1,
   ecr: 1,
   publishGoModule: 1,
 
