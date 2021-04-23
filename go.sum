@@ -77,6 +77,8 @@ github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
 github.com/banzaicloud/cluster-registry v0.0.0-20210408202748-0ca595389ef1 h1:EW4JBO5J2LiseJS9hFN16YiinisHfaMx6talyc6gEfw=
 github.com/banzaicloud/cluster-registry v0.0.0-20210408202748-0ca595389ef1/go.mod h1:2tcT4bq6UaWOOeIBsjcrqawOfrybamYUJSM4jRVHQic=
+github.com/banzaicloud/cluster-registry v0.0.1 h1:P9BGlfMDdN1N2OCPfkqh/7o+YxzuUDZEVbySsMks5fo=
+github.com/banzaicloud/cluster-registry v0.0.1/go.mod h1:2tcT4bq6UaWOOeIBsjcrqawOfrybamYUJSM4jRVHQic=
 github.com/banzaicloud/k8s-objectmatcher v1.5.0 h1:mYrLzvRgxCHBlJZEcyIglDuoKpMhwHocgsAXl1nmm10=
 github.com/banzaicloud/k8s-objectmatcher v1.5.0/go.mod h1:9MWY5HsM/OaTmoTirczhlO8UALbH722WgdpaaR7Y8OE=
 github.com/banzaicloud/operator-tools v0.21.0 h1:RZm7g9HhCsUJIvMSIY2F7d7ZE4iux6gZxr3L1DOs6qQ=
