@@ -1,0 +1,35 @@
+@Library(['srePipeline@banzai']) _
+
+def pipelinesettings = [
+  deploy: [
+    [name: "banzaicloud/cluster-registry-controller"]
+  ],
+  tagversion: "${env.BUILD_ID}",
+  banzaiEcrRegistry: "033498657557.dkr.ecr.us-east-2.amazonaws.com/",
+  chart: "deploy/charts",
+
+  customContainersProject: "banzaicloud",
+  customContainersCreds: "banzai_botuser_containers_cisco_com",
+
+  // Knobs to turn on pipeline stages
+  prepare: 1,
+  unittest: 1,
+  build: 1,
+  publishHelm: 1,
+  useMultipleHelm: 1,
+  helmS3Private: 1,
+  publishContainer: 1,
+  ciscoContainer: 1,
+  ecr: 1,
+  publishGoModule: 1,
+
+  dockerHub: 0,
+  blackduck:0,
+  pushPublicRegistryOnTag: 0,
+  preDeployE2E: 0,
+  deployHelm: 0,
+  sonarQube: 0
+]
+
+srePipeline( pipelinesettings )
+
