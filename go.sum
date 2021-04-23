@@ -81,6 +81,8 @@ github.com/banzaicloud/cluster-registry v0.0.1 h1:P9BGlfMDdN1N2OCPfkqh/7o+YxzuUD
 github.com/banzaicloud/cluster-registry v0.0.1/go.mod h1:2tcT4bq6UaWOOeIBsjcrqawOfrybamYUJSM4jRVHQic=
 github.com/banzaicloud/cluster-registry v0.0.2 h1:wOEyOYL+H/GMO2W/FguqGsgUouk6AqaEfwY7++xUGtI=
 github.com/banzaicloud/cluster-registry v0.0.2/go.mod h1:2tcT4bq6UaWOOeIBsjcrqawOfrybamYUJSM4jRVHQic=
+github.com/banzaicloud/cluster-registry v0.0.3 h1:kupknZzZ+pJr9wk24/lotIi2NybzPppt1tJ9XQGYpGQ=
+github.com/banzaicloud/cluster-registry v0.0.3/go.mod h1:2tcT4bq6UaWOOeIBsjcrqawOfrybamYUJSM4jRVHQic=
 github.com/banzaicloud/k8s-objectmatcher v1.5.0 h1:mYrLzvRgxCHBlJZEcyIglDuoKpMhwHocgsAXl1nmm10=
 github.com/banzaicloud/k8s-objectmatcher v1.5.0/go.mod h1:9MWY5HsM/OaTmoTirczhlO8UALbH722WgdpaaR7Y8OE=
 github.com/banzaicloud/operator-tools v0.21.0 h1:RZm7g9HhCsUJIvMSIY2F7d7ZE4iux6gZxr3L1DOs6qQ=
