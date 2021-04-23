@@ -5,8 +5,13 @@ FROM golang:1.15 as builder
 
 ARG GITHUB_ACCESS_TOKEN
 
-ARG GOPROXY=https://proxy.golang.org
-ARG GOPRIVATE=github.com/banzaicloud
+ARG GOPROXY="https://proxy.golang.org,direct"
+ENV GOPROXY="${GOPROXY}"
+ENV GOPRIVATE='github.cisco.com,github.com/banzaicloud'
+ENV GONOPROXY='gopkg.in,go.uber.org'
+ENV GOFLAGS="-mod=readonly"
+
+
 
 ENV GOFLAGS="-mod=readonly"
 
@@ -15,7 +20,9 @@ WORKDIR /workspace/
 # Copy the Go Modules manifests
 COPY ./go.mod /workspace/
 COPY ./go.sum /workspace/
-RUN git config --global url."https://${GITHUB_ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
+RUN if [ -n "${GITHUB_ACCESS_TOKEN}" ]; then \
+      git config --global url."https://${GITHUB_ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"; \
+    fi
 RUN go mod download
 
 COPY ./ /workspace/
