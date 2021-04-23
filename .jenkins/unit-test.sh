@@ -3,14 +3,17 @@
 set -x
 set -e
 
-export GOSUMDB=off
+# get artifactory creds
+sed -i '1d' "${NYOTA_CREDENTIALS_FILE}"
+. "${NYOTA_CREDENTIALS_FILE}"
+
 # Dependency on banzaicloud/cluster-registry
 export GOPRIVATE='github.cisco.com,github.com/banzaicloud'
-export GOPROXY="https://proxy.golang.org,direct"
+export GOPROXY="https://proxy.golang.org,https://${artifactory_user}:${artifactory_password}@${artifactory_url},direct"
 
 export GOPATH=$(go env GOPATH)
-export GOFLAGS='-mod=readonly'
 export PATH="${PATH}:${GOPATH}/bin"
+export GOFLAGS='-mod=readonly'
 
 go mod download
 
