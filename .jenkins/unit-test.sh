@@ -12,6 +12,8 @@ export GOPATH=$(go env GOPATH)
 export GOFLAGS='-mod=readonly'
 export PATH="${PATH}:${GOPATH}/bin"
 
+go mod download
+
 echo "License check"
 #make license-check
 
