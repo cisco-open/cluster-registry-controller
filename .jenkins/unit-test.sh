@@ -4,7 +4,8 @@ set -x
 set -e
 
 export GOSUMDB=off
-export GOPRIVATE='github.cisco.com'
+# Dependency on banzaicloud/cluster-registry
+export GOPRIVATE='github.cisco.com,github.com/banzaicloud'
 export GOPROXY="https://proxy.golang.org,direct"
 
 export GOPATH=$(go env GOPATH)
