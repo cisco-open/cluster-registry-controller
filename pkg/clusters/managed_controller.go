@@ -93,7 +93,7 @@ func (c *managedController) Start(ctx context.Context, mgr ctrl.Manager) error {
 		// process will terminate if we lose leadership, so we don't need to handle that.
 		<-mgr.Elected()
 
-		started := mgr.GetCache().WaitForCacheSync(c.ctrlContext.Done())
+		started := mgr.GetCache().WaitForCacheSync(c.ctrlContext)
 		if !started {
 			c.log.Error(err, "timeout while waiting for cache sync")
 
@@ -104,14 +104,14 @@ func (c *managedController) Start(ctx context.Context, mgr ctrl.Manager) error {
 		// controller returns an error.
 		c.log.Info("starting ctrl")
 
-		err = c.reconciler.Start()
+		err = c.reconciler.Start(c.ctrlContext)
 		if err != nil {
 			c.log.Error(err, "")
 
 			return
 		}
 
-		if err := c.ctrl.Start(c.ctrlContext.Done()); err != nil {
+		if err := c.ctrl.Start(c.ctrlContext); err != nil {
 			c.log.Error(err, "cannot run sync controller")
 		}
 		c.log.Info("ctrl stopped")

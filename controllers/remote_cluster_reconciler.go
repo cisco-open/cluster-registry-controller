@@ -43,10 +43,10 @@ func NewRemoteClusterReconciler(name string, localMgr ctrl.Manager, log logr.Log
 	}
 }
 
-func (r *RemoteClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *RemoteClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.GetLogger().WithValues("cluster", req.NamespacedName)
 
-	err := r.setClusterID()
+	err := r.setClusterID(ctx)
 	if err != nil {
 		return ctrl.Result{}, errors.WithStackIf(err)
 	}
@@ -54,7 +54,7 @@ func (r *RemoteClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	log.Info("reconciling")
 
 	cluster := &clusterregistryv1alpha1.Cluster{}
-	err = r.localMgr.GetClient().Get(r.GetContext(), req.NamespacedName, cluster)
+	err = r.localMgr.GetClient().Get(ctx, req.NamespacedName, cluster)
 	if apierrors.IsNotFound(err) {
 		return ctrl.Result{}, nil
 	}
@@ -65,14 +65,14 @@ func (r *RemoteClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	cluster.Status = cluster.Status.Reset()
 	currentConditions := GetCurrentConditions(cluster)
 
-	reconcileError := r.reconcile(r.GetContext(), cluster, currentConditions)
+	reconcileError := r.reconcile(ctx, cluster, currentConditions)
 
 	if reconcileError != nil {
 		SetCondition(cluster, currentConditions, ClustersSyncedCondition(reconcileError), r.localRecorder)
 	}
 
 	log.Info("update cluster status")
-	err = UpdateCluster(r.GetContext(), reconcileError, r.localMgr.GetClient(), cluster, currentConditions, r.GetLogger())
+	err = UpdateCluster(ctx, reconcileError, r.localMgr.GetClient(), cluster, currentConditions, r.GetLogger())
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -103,9 +103,9 @@ func (r *RemoteClusterReconciler) reconcile(ctx context.Context, cluster *cluste
 	return nil
 }
 
-func (r *RemoteClusterReconciler) setClusterID() error {
+func (r *RemoteClusterReconciler) setClusterID(ctx context.Context) error {
 	if r.clusterID == "" {
-		clusterID, err := GetClusterID(r.GetContext(), r.GetManager().GetClient())
+		clusterID, err := GetClusterID(ctx, r.GetManager().GetClient())
 		if err != nil {
 			return errors.WrapIf(err, "could not get cluster id")
 		}
@@ -150,15 +150,16 @@ func (r *RemoteClusterReconciler) SetupWithController(ctx context.Context, ctrl 
 		return err
 	}
 
-	err = ctrl.Watch(&source.Kind{
-		Type: &clusterregistryv1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Cluster",
-				APIVersion: clusterregistryv1alpha1.SchemeBuilder.GroupVersion.String(),
+	err = ctrl.Watch(
+		&source.Kind{
+			Type: &clusterregistryv1alpha1.Cluster{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Cluster",
+					APIVersion: clusterregistryv1alpha1.SchemeBuilder.GroupVersion.String(),
+				},
 			},
 		},
-	}, &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(object handler.MapObject) []reconcile.Request {
+		handler.EnqueueRequestsFromMapFunc(func(object client.Object) []reconcile.Request {
 			return []reconcile.Request{
 				{
 					NamespacedName: client.ObjectKey{
@@ -167,25 +168,25 @@ func (r *RemoteClusterReconciler) SetupWithController(ctx context.Context, ctrl 
 				},
 			}
 		}),
-	}, predicate.Funcs{ // reconcile the local peer cluster for any change at the remote side
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			var ok bool
-			var oldObject, newObject *clusterregistryv1alpha1.Cluster
+		predicate.Funcs{ // reconcile the local peer cluster for any change at the remote side
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				var ok bool
+				var oldObject, newObject *clusterregistryv1alpha1.Cluster
 
-			if oldObject, ok = e.ObjectOld.(*clusterregistryv1alpha1.Cluster); !ok {
+				if oldObject, ok = e.ObjectOld.(*clusterregistryv1alpha1.Cluster); !ok {
+					return false
+				}
+				if newObject, ok = e.ObjectNew.(*clusterregistryv1alpha1.Cluster); !ok {
+					return false
+				}
+
+				if oldObject.Status.State != newObject.Status.State || oldObject.Status.Message != newObject.Status.Message {
+					return true
+				}
+
 				return false
-			}
-			if newObject, ok = e.ObjectNew.(*clusterregistryv1alpha1.Cluster); !ok {
-				return false
-			}
-
-			if oldObject.Status.State != newObject.Status.State || oldObject.Status.Message != newObject.Status.Message {
-				return true
-			}
-
-			return false
-		},
-	})
+			},
+		})
 	if err != nil {
 		return errors.WrapIf(err, "could not create watch for remote clusters")
 	}
@@ -195,10 +196,11 @@ func (r *RemoteClusterReconciler) SetupWithController(ctx context.Context, ctrl 
 		return errors.WrapIf(err, "could not create local informer for clusters")
 	}
 
-	err = ctrl.Watch(&source.Informer{
-		Informer: clusterInformer,
-	}, &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(object handler.MapObject) []reconcile.Request {
+	err = ctrl.Watch(
+		&source.Informer{
+			Informer: clusterInformer,
+		},
+		handler.EnqueueRequestsFromMapFunc(func(object client.Object) []reconcile.Request {
 			return []reconcile.Request{
 				{
 					NamespacedName: client.ObjectKey{
@@ -207,7 +209,7 @@ func (r *RemoteClusterReconciler) SetupWithController(ctx context.Context, ctrl 
 				},
 			}
 		}),
-	}, predicate.GenerationChangedPredicate{})
+		predicate.GenerationChangedPredicate{})
 	if err != nil {
 		return errors.WrapIf(err, "could not create watch for local informer")
 	}

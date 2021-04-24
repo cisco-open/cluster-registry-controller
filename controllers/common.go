@@ -31,7 +31,7 @@ func (s *InMemorySource) String() string {
 	return "in-memory"
 }
 
-func (s *InMemorySource) Start(h handler.EventHandler, q workqueue.RateLimitingInterface, p ...predicate.Predicate) error {
+func (s *InMemorySource) Start(ctx context.Context, h handler.EventHandler, q workqueue.RateLimitingInterface, p ...predicate.Predicate) error {
 	s.reconciler.setQueue(q)
 
 	return nil

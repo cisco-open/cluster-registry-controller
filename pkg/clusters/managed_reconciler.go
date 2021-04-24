@@ -24,7 +24,7 @@ type ManagedReconciler interface {
 	SetContext(ctx context.Context)
 	GetLogger() logr.Logger
 	SetLogger(l logr.Logger)
-	Start() error
+	Start(ctx context.Context) error
 	SetManager(mgr ctrl.Manager)
 	SetScheme(scheme *runtime.Scheme)
 	SetupWithController(ctx context.Context, ctrl controller.Controller) error
@@ -48,7 +48,7 @@ func NewManagedReconciler(name string, log logr.Logger) ManagedReconciler {
 	}
 }
 
-func (r *ManagedReconcilerBase) Start() error {
+func (r *ManagedReconcilerBase) Start(ctx context.Context) error {
 	return nil
 }
 
@@ -105,7 +105,7 @@ func (r *ManagedReconcilerBase) SetScheme(scheme *runtime.Scheme) {
 	r.scheme = scheme
 }
 
-func (r *ManagedReconcilerBase) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *ManagedReconcilerBase) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
