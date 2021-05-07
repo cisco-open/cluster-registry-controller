@@ -25,11 +25,22 @@ def pipelinesettings = [
   publishGoModule: 1,
 
   dockerHub: 0,
-  blackduck:0,
   pushPublicRegistryOnTag: 0,
   preDeployE2E: 0,
   deployHelm: 0,
-  sonarQube: 0
+  sonarQube: 0,
+
+  corona: [                                     // Corona paramters
+    releaseID: "77425",                         // Corona Release ID
+    productID: "7147",                          // Corona Project ID
+    csdlID: "167358",                            // Corona CSDL ID
+    securityContact: "banzai-backyards@cisco.com",      // Corona Security Contact
+    engineeringContact: "banzai-backyards@cisco.com",   // Corona Engineering Contact
+    imageAdmins: "turip,zsltvrg",           // Corona Image Admins
+  ],
+  blackduck: [
+    email: "banzai-backyards@cisco.com",
+  ],
 ]
 
 srePipeline( pipelinesettings )

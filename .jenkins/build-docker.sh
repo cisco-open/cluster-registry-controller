@@ -52,3 +52,4 @@ docker build \
     "${CONTEXT}" \
     -t "${IMG}"
 
+docker tag "${IMG}" "$(echo $IMG | sed 's?/?-?g')"
