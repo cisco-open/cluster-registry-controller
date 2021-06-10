@@ -28,7 +28,7 @@ def pipelinesettings = [
   pushPublicRegistryOnTag: 0,
   preDeployE2E: 0,
   deployHelm: 0,
-  sonarQube: 0,
+  sonarQube: 1,
 
   corona: [                                     // Corona paramters
     releaseID: "77425",                         // Corona Release ID
