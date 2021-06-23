@@ -58,6 +58,10 @@ spec:
               value: "{{ .Values.controller.log.format }}"
             - name: LOG_VERBOSITY
               value: "{{ .Values.controller.log.verbosity }}"
+            {{ if .Values.localCluster.name }}
+            - name: PROVISION_LOCAL_CLUSTER
+              value: "{{ .Values.localCluster.name }}"
+            {{ end }}
             - name: NAMESPACE
               valueFrom:
                 fieldRef:

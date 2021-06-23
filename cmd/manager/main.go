@@ -14,12 +14,14 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/banzaicloud/cluster-registry-controller/controllers"
 	"github.com/banzaicloud/cluster-registry-controller/internal/config"
 	"github.com/banzaicloud/cluster-registry-controller/pkg/clusters"
 	"github.com/banzaicloud/cluster-registry-controller/pkg/signals"
+	"github.com/banzaicloud/cluster-registry-controller/pkg/util"
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	"github.com/banzaicloud/operator-tools/pkg/logger"
 	//nolint:gci
@@ -51,6 +53,24 @@ func main() {
 			zap.UseDevMode(false),
 			zap.Level(zapcore.Level(0-configuration.Logging.Verbosity)),
 		))
+	}
+
+	if configuration.ProvisionLocalCluster != "" {
+		client, err := client.New(ctrl.GetConfigOrDie(), client.Options{
+			Scheme: scheme,
+		})
+		if err != nil {
+			setupLog.Error(err, "cannot connect to kubernetes cluster")
+			os.Exit(1)
+		}
+
+		err = util.ProvisionLocalClusterObject(client,
+			ctrl.Log.WithName("provision-local-cluster"),
+			config.Configuration(configuration))
+		if err != nil {
+			setupLog.Error(err, "cannot provision local cluster object")
+			os.Exit(1)
+		}
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
