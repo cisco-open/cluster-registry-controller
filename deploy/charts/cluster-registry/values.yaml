@@ -4,6 +4,10 @@
 
 replicas: 1
 
+localCluster:
+  # specify to automatically provision the cluster object upon first start
+  name: ""
+
 istio:
   revision: ""
 

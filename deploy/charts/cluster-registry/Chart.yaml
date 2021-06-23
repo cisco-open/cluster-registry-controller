@@ -9,5 +9,5 @@ maintainers:
 sources:
 - https://github.com/banzaicloud/backyards
 
-version: 0.0.2
-appVersion: 0.0.2
+version: 0.0.5
+appVersion: 0.0.5

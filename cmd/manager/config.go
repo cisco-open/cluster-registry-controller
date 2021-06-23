@@ -84,6 +84,9 @@ func initConfiguration(v *viper.Viper, p *flag.FlagSet) {
 	p.String("namespace", "cluster-registry", "Namespace where the controller is running")
 	_ = viper.BindPFlag("namespace", p.Lookup("namespace"))
 
+	p.String("provision-local-cluster", "", "Name of the default local cluster to provision (if not specified no provisioning occurs)")
+	_ = viper.BindPFlag("provision-local-cluster", p.Lookup("provision-local-cluster"))
+
 	v.SetDefault("syncController.workerCount", 1)
 	v.SetDefault("syncController.rateLimit.maxKeys", 1024)
 	v.SetDefault("syncController.rateLimit.maxRatePerSecond", 1)

@@ -3,12 +3,13 @@
 package config
 
 type Configuration struct {
-	MetricsAddr       string            `mapstructure:"metrics-addr" json:"metricsAddr,omitempty"`
-	LeaderElection    LeaderElection    `mapstructure:"leader-election" json:"leaderElection,omitempty"`
-	Logging           Logging           `mapstructure:"log" json:"logging,omitempty"`
-	ClusterController ClusterController `mapstructure:"clusterController" json:"clusterController,omitempty"`
-	SyncController    SyncController    `mapstructure:"syncController" json:"syncController,omitempty"`
-	Namespace         string            `mapstructure:"namespace" json:"namespace,omitempty"`
+	MetricsAddr           string            `mapstructure:"metrics-addr" json:"metricsAddr,omitempty"`
+	LeaderElection        LeaderElection    `mapstructure:"leader-election" json:"leaderElection,omitempty"`
+	Logging               Logging           `mapstructure:"log" json:"logging,omitempty"`
+	ClusterController     ClusterController `mapstructure:"clusterController" json:"clusterController,omitempty"`
+	SyncController        SyncController    `mapstructure:"syncController" json:"syncController,omitempty"`
+	Namespace             string            `mapstructure:"namespace" json:"namespace,omitempty"`
+	ProvisionLocalCluster string            `mapstructure:"provision-local-cluster" json:"provisionLocalCluster,omitempty"`
 }
 
 type ClusterController struct {
