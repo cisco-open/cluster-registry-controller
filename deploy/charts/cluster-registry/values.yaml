@@ -20,7 +20,7 @@ securityContext:
   allowPrivilegeEscalation: false
 image:
   repository: ghcr.io/banzaicloud/cluster-registry-controller
-  tag: v0.0.2
+  tag: v0.0.6
   pullPolicy: IfNotPresent
 
 nodeSelector: {}
