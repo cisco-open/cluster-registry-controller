@@ -19,7 +19,7 @@ export GOFLAGS='-mod=readonly'
 go mod download
 
 echo "License check"
-#make license-check
+make license-cache license-check
 
 echo "Run tests"
 make test
