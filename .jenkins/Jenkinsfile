@@ -24,6 +24,11 @@ def pipelinesettings = [
   ecr: 1,
   publishGoModule: 1,
 
+  caches: [
+    cacheGoMod: true,
+    cacheLicensei: true,
+  ],
+
   dockerHub: 0,
   pushPublicRegistryOnTag: 0,
   preDeployE2E: 0,
@@ -43,5 +48,9 @@ def pipelinesettings = [
   ],
 ]
 
-srePipeline( pipelinesettings )
 
+withCredentials([string(credentialsId: 'licensei-github-token', variable: 'GITHUB_TOKEN')]) {
+  withEnv(["GITHUB_TOKEN="+GITHUB_TOKEN]) {
+    srePipeline( pipelinesettings )
+  }
+}
