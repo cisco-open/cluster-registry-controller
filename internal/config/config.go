@@ -12,6 +12,7 @@ type Configuration struct {
 	ProvisionLocalCluster    string            `mapstructure:"provision-local-cluster" json:"provisionLocalCluster,omitempty"`
 	ManageLocalClusterSecret bool              `mapstructure:"manage-local-cluster-secret" json:"manageLocalClusterSecret,omitempty"`
 	ReaderServiceAccountName string            `mapstructure:"reader-service-account-name" json:"readerServiceAccountName,omitempty"`
+	NetworkName              string            `mapstructure:"network-name" json:"networkName,omitempty"`
 }
 
 type ClusterController struct {
