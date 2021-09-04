@@ -93,21 +93,23 @@ spec:
               kubernetesApiEndpoints:
                 description: KubernetesAPIEndpoints represents the endpoints of the
                   API server for this cluster.
-                properties:
-                  caBundle:
-                    description: CABundle contains the certificate authority information.
-                    format: byte
-                    type: string
-                  clientNetwork:
-                    description: The network name of the client to match whether if
-                      it should use the corresponding server address.
-                    type: string
-                  serverAddress:
-                    description: Address of this server, suitable for a client that
-                      matches the clientNetwork if specified. This can be a hostname,
-                      hostname:port, IP or IP:port.
-                    type: string
-                type: object
+                items:
+                  properties:
+                    caBundle:
+                      description: CABundle contains the certificate authority information.
+                      format: byte
+                      type: string
+                    clientNetwork:
+                      description: The network name of the client to match whether
+                        if it should use the corresponding server address.
+                      type: string
+                    serverAddress:
+                      description: Address of this server, suitable for a client that
+                        matches the clientNetwork if specified. This can be a hostname,
+                        hostname:port, IP or IP:port.
+                      type: string
+                  type: object
+                type: array
             required:
             - clusterID
             type: object
