@@ -28,7 +28,9 @@ import (
 	"github.com/banzaicloud/cluster-registry-controller/internal/config"
 	"github.com/banzaicloud/cluster-registry-controller/pkg/clustermeta"
 	"github.com/banzaicloud/cluster-registry-controller/pkg/clusters"
+	"github.com/banzaicloud/cluster-registry-controller/pkg/util"
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
+	"github.com/banzaicloud/operator-tools/pkg/reconciler"
 )
 
 type ClusterReconciler struct {
@@ -279,7 +281,40 @@ func (r *ClusterReconciler) reconcileLocalCluster(ctx context.Context, cluster *
 	}
 	cluster.Status.ClusterMetadata = clusterMetadata
 
+	err = r.provisionLocalClusterReaderSecret(ctx, cluster)
+	if err != nil {
+		return errors.WithStackIf(err)
+	}
+
 	return nil
+}
+
+func (r *ClusterReconciler) provisionLocalClusterReaderSecret(ctx context.Context, cluster *clusterregistryv1alpha1.Cluster) error {
+	if !r.config.ManageLocalClusterSecret {
+		return nil
+	}
+
+	if cluster.Spec.AuthInfo.SecretRef.Name == "" || cluster.Spec.AuthInfo.SecretRef.Namespace == "" {
+		return nil
+	}
+
+	secret, err := util.GetReaderSecretForCluster(ctx, r.GetManager().GetClient(), r.GetManager().GetConfig(), cluster, types.NamespacedName{
+		Name:      r.config.ReaderServiceAccountName,
+		Namespace: r.config.Namespace,
+	})
+	if err != nil {
+		return errors.WithStackIf(err)
+	}
+
+	rec := reconciler.NewReconcilerWith(r.GetManager().GetClient(),
+		reconciler.WithLog(r.GetLogger()),
+		reconciler.WithRecreateImmediately(),
+		reconciler.WithEnableRecreateWorkload(),
+		reconciler.WithRecreateEnabledForAll(),
+	)
+	_, err = rec.ReconcileResource(secret, reconciler.StatePresent)
+
+	return errors.WithStackIf(err)
 }
 
 func (r *ClusterReconciler) checkLocalClusterConflict(ctx context.Context, cluster *clusterregistryv1alpha1.Cluster, currentConditions ClusterConditionsMap) error {

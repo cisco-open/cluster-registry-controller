@@ -47,7 +47,7 @@ podDisruptionBudget:
 
 controller:
   leaderElection:
-    enabled: false
+    enabled: true
     name: "cluster-registry-leader-election"
   log:
     format: json
