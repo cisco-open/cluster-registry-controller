@@ -1,4 +1,4 @@
-module github.com/banzaicloud/cluster-registry-controller/static
+module wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/static
 
 go 1.15
 

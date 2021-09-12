@@ -12,8 +12,7 @@ import (
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"sigs.k8s.io/yaml"
-
-	"github.com/banzaicloud/cluster-registry-controller/internal/config"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
 )
 
 type Configuration config.Configuration
