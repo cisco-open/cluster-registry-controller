@@ -1,6 +1,6 @@
 module github.com/banzaicloud/cluster-registry-controller
 
-go 1.15
+go 1.16
 
 require (
 	emperror.dev/errors v0.8.0

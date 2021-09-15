@@ -6,6 +6,8 @@ def pipelinesettings = [
   ],
   tagversion: "${env.BUILD_ID}",
   banzaiEcrRegistry: "033498657557.dkr.ecr.us-east-2.amazonaws.com/",
+  overridePipelineDockerVersion: "containers.cisco.com/banzaicloud/golang-docker:1.16",
+  overrideJenkinsRegistryCreds: "banzai_botuser_containers_cisco_com",
   chart: "deploy/charts",
 
   customContainersProject: "banzaicloud",

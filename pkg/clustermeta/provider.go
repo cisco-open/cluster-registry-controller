@@ -51,8 +51,7 @@ func DetectProvider(ctx context.Context, client client.Client, node *corev1.Node
 func getK8sNode(ctx context.Context, client client.Client) (*corev1.Node, bool, error) {
 	nodes := &corev1.NodeList{}
 
-	err := client.List(ctx, nodes)
-	if err != nil {
+	if err := client.List(ctx, nodes); err != nil {
 		return nil, false, err
 	}
 

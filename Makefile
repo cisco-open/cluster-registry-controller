@@ -11,8 +11,8 @@ IMG ?= controller:latest
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 REPO_ROOT=$(shell git rev-parse --show-toplevel)
 KUBEBUILDER_VERSION = 2.3.1
-LICENSEI_VERSION = 0.3.1
-GOLANGCI_VERSION = 1.38.0
+LICENSEI_VERSION = 0.5.0
+GOLANGCI_VERSION = 1.42.1
 CHART_NAME = cluster-registry
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
