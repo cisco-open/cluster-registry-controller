@@ -15,6 +15,7 @@ const (
 	GKE   = "GKE"
 	AKS   = "AKS"
 	KINDD = "KIND"
+	IKS   = "IKS"
 )
 
 func IsPKE(ctx context.Context, client client.Client, node *corev1.Node) (match bool, distribution string, err error) {
@@ -175,6 +176,41 @@ func IsKIND(ctx context.Context, client client.Client, node *corev1.Node) (match
 	}
 
 	if provider != KINDP {
+		match = false
+
+		return
+	}
+
+	return match, distribution, err
+}
+
+func IsIKS(ctx context.Context, client client.Client, node *corev1.Node) (match bool, distribution string, err error) {
+	distribution = IKS
+
+	if node == nil {
+		node, _, err = getK8sNode(ctx, client)
+		if err != nil {
+			return
+		}
+	}
+
+	match = true
+	if value, ok := node.Labels["iks.intersight.cisco.com/version"]; !ok || value == "" {
+		match = false
+
+		return
+	}
+
+	var provider string
+	provider, err = DetectProvider(ctx, client, node)
+	if IsUnknownProviderError(err) {
+		return false, distribution, nil
+	}
+	if err != nil {
+		return
+	}
+
+	if provider != CISCO {
 		match = false
 
 		return
