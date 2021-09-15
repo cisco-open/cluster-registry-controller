@@ -3,13 +3,8 @@
 set -x
 set -e
 
-# get artifactory creds
-sed -i '1d' "${NYOTA_CREDENTIALS_FILE}"
-. "${NYOTA_CREDENTIALS_FILE}"
-
 # Dependency on banzaicloud/cluster-registry
-export GOPRIVATE='github.cisco.com,github.com/banzaicloud'
-export GOPROXY="https://proxy.golang.org,https://${artifactory_user}:${artifactory_password}@${artifactory_url},direct"
+export GOPRIVATE='wwwin-github.cisco.com,github.cisco.com,github.com/banzaicloud'
 export GONOPROXY='gopkg.in,go.uber.org'
 
 export GOPATH=$(go env GOPATH)

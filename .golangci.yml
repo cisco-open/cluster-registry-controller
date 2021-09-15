@@ -17,6 +17,8 @@ linters:
     - wrapcheck
     - forbidigo
 
+    - gomoddirectives
+
     # - goconst
     # - gocritic
     # - godox
@@ -31,6 +33,8 @@ linters:
     # deprecated
     - maligned
     - interfacer
+    - golint
+    - scopelint
 
 linters-settings:
   gomnd:

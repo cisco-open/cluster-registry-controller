@@ -16,8 +16,7 @@ func GetClusterMetadata(ctx context.Context, client client.Client) (v1alpha1.Clu
 	md := v1alpha1.ClusterMetadata{}
 
 	nodes := &corev1.NodeList{}
-	err := client.List(ctx, nodes)
-	if err != nil {
+	if err := client.List(ctx, nodes); err != nil {
 		return md, err
 	}
 
