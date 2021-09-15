@@ -9,12 +9,12 @@ approved = [
 ignored = [
   "github.com/davecgh/go-spew", # ISC license
   "github.com/gogo/protobuf",
-  "google.golang.org/protobuf",  
+  "google.golang.org/protobuf",
   "github.com/ghodss/yaml",
   "sigs.k8s.io/yaml", # Forked from above
   "gopkg.in/fsnotify.v1",
 
-  "github.com/banzaicloud/cluster-registry-controller/api",
+  "wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/api",
 ]
 
 [header]

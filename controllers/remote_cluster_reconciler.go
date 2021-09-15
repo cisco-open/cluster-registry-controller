@@ -19,9 +19,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clustermeta"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
 
-	"github.com/banzaicloud/cluster-registry-controller/pkg/clustermeta"
-	"github.com/banzaicloud/cluster-registry-controller/pkg/clusters"
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 )
 
