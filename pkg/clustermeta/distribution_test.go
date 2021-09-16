@@ -61,6 +61,10 @@ func TestDistributionDetector(t *testing.T) {
 			filename:     "kind-kind.yaml",
 			distribution: "KIND",
 		},
+		{
+			filename:     "cisco-iks.yaml",
+			distribution: "IKS",
+		},
 	}
 
 	// with mocked client

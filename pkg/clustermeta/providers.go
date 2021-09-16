@@ -15,10 +15,11 @@ const (
 	GOOGLE  = "google"
 	VSPHERE = "vsphere"
 	KINDP   = "kind"
+	CISCO   = "cisco"
 )
 
 func IsAmazon(ctx context.Context, client client.Client, node *corev1.Node) (bool, string, error) {
-	ok, err := detectNodeByProviderID(ctx, client, node, "aws")
+	ok, _, err := detectNodeByProviderID(ctx, client, node, "aws")
 	if err != nil {
 		return ok, "", err
 	}
@@ -27,7 +28,7 @@ func IsAmazon(ctx context.Context, client client.Client, node *corev1.Node) (boo
 }
 
 func IsAzure(ctx context.Context, client client.Client, node *corev1.Node) (bool, string, error) {
-	ok, err := detectNodeByProviderID(ctx, client, node, "azure")
+	ok, _, err := detectNodeByProviderID(ctx, client, node, "azure")
 	if err != nil {
 		return ok, "", err
 	}
@@ -36,7 +37,7 @@ func IsAzure(ctx context.Context, client client.Client, node *corev1.Node) (bool
 }
 
 func IsGoogle(ctx context.Context, client client.Client, node *corev1.Node) (bool, string, error) {
-	ok, err := detectNodeByProviderID(ctx, client, node, "gce")
+	ok, _, err := detectNodeByProviderID(ctx, client, node, "gce")
 	if err != nil {
 		return ok, "", err
 	}
@@ -45,19 +46,43 @@ func IsGoogle(ctx context.Context, client client.Client, node *corev1.Node) (boo
 }
 
 func IsVsphere(ctx context.Context, client client.Client, node *corev1.Node) (bool, string, error) {
-	ok, err := detectNodeByProviderID(ctx, client, node, "vsphere")
+	var ok bool
+	var err error
+
+	ok, node, err = detectNodeByProviderID(ctx, client, node, "vsphere")
 	if err != nil {
 		return ok, "", err
+	}
+
+	if node.Labels == nil {
+		node.Labels = make(map[string]string)
+	}
+
+	if value, ok := node.Labels["iks.intersight.cisco.com/version"]; ok && value != "" {
+		return false, "", nil
 	}
 
 	return ok, VSPHERE, nil
 }
 
 func IsKind(ctx context.Context, client client.Client, node *corev1.Node) (bool, string, error) {
-	ok, err := detectNodeByProviderID(ctx, client, node, "kind")
+	ok, _, err := detectNodeByProviderID(ctx, client, node, "kind")
 	if err != nil {
 		return ok, "", err
 	}
 
 	return ok, KINDP, nil
+}
+
+func IsCisco(ctx context.Context, client client.Client, node *corev1.Node) (bool, string, error) {
+	ok, node, err := detectNodeByProviderID(ctx, client, node, "vsphere")
+	if err != nil {
+		return ok, "", err
+	}
+
+	if value, ok := node.Labels["iks.intersight.cisco.com/version"]; !ok || value == "" {
+		return false, "", nil
+	}
+
+	return ok, CISCO, nil
 }

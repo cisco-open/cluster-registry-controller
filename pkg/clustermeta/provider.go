@@ -17,6 +17,7 @@ var knownProviders = []IsProvider{
 	IsGoogle,
 	IsVsphere,
 	IsKind,
+	IsCisco,
 }
 
 type IsProvider func(ctx context.Context, client client.Client, node *corev1.Node) (bool, string, error)
@@ -62,30 +63,30 @@ func getK8sNode(ctx context.Context, client client.Client) (*corev1.Node, bool, 
 	return &nodes.Items[0], true, nil
 }
 
-func detectNodeByProviderID(ctx context.Context, client client.Client, node *corev1.Node, scheme string) (bool, error) {
+func detectNodeByProviderID(ctx context.Context, client client.Client, node *corev1.Node, scheme string) (bool, *corev1.Node, error) {
 	var found bool
 	var err error
 
 	if node == nil {
 		node, found, err = getK8sNode(ctx, client)
 		if err != nil {
-			return false, err
+			return false, nil, err
 		}
 		if !found {
-			return false, nil
+			return false, nil, nil
 		}
 	}
 
 	if node.Spec.ProviderID != "" {
 		u, err := url.Parse(node.Spec.ProviderID)
 		if err != nil {
-			return false, err
+			return false, nil, err
 		}
 
 		if u.Scheme == scheme {
-			return true, nil
+			return true, node, nil
 		}
 	}
 
-	return false, nil
+	return false, node, nil
 }
