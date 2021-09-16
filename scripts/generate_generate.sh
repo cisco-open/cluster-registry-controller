@@ -150,7 +150,7 @@ go fmt $ROOT_DIR/static/generate.go > /dev/null
 
 echo "module wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller$RELATIVE_ROOT_DIR/static
 
-go 1.15
+go 1.16
 "
 
 ) > $ROOT_DIR/static/go.mod

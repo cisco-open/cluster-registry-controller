@@ -1,6 +1,6 @@
 module wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller
 
-go 1.15
+go 1.16
 
 require (
 	emperror.dev/errors v0.8.0

@@ -58,6 +58,10 @@ func TestProviderDetector(t *testing.T) {
 			filename: "kind-kind.yaml",
 			provider: "kind",
 		},
+		{
+			filename: "cisco-iks.yaml",
+			provider: "cisco",
+		},
 	}
 
 	// with mocked client

@@ -16,8 +16,7 @@ func GetClusterMetadata(ctx context.Context, client client.Client) (v1alpha1.Clu
 	md := v1alpha1.ClusterMetadata{}
 
 	nodes := &corev1.NodeList{}
-	err := client.List(ctx, nodes)
-	if err != nil {
+	if err := client.List(ctx, nodes); err != nil {
 		return md, err
 	}
 
@@ -26,12 +25,12 @@ func GetClusterMetadata(ctx context.Context, client client.Client) (v1alpha1.Clu
 	}
 
 	provider, err := DetectProvider(ctx, client, &nodes.Items[0])
-	if err != nil {
+	if err != nil && !IsUnknownProviderError(err) {
 		return md, err
 	}
 
 	distribution, err := DetectDistribution(ctx, client, &nodes.Items[0])
-	if err != nil {
+	if err != nil && !IsUnknownDistributionError(err) {
 		return md, err
 	}
 
