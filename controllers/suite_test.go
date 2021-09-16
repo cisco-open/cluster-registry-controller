@@ -17,10 +17,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/controllers"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
 
-	"github.com/banzaicloud/cluster-registry-controller/controllers"
-	"github.com/banzaicloud/cluster-registry-controller/internal/config"
-	"github.com/banzaicloud/cluster-registry-controller/pkg/clusters"
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	//nolint:gci
 	// +kubebuilder:scaffold:imports

@@ -16,9 +16,9 @@ mkdir -p ${ROOT_DIR}/static
 readonly RELATIVE_ROOT_DIR=$(echo $ROOT_DIR | sed "s?$REPO_ROOT??")
 
 if [ -z "$RELATIVE_ROOT_DIR" ]; then
-        GO_MODULE_NAME="github.com/banzaicloud/cluster-registry-controller"
+        GO_MODULE_NAME="wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller"
 else
-        GO_MODULE_NAME="github.com/banzaicloud/cluster-registry-controller$RELATIVE_ROOT_DIR"
+        GO_MODULE_NAME="wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller$RELATIVE_ROOT_DIR"
 fi
 
 if [ ! -d $ROOT_DIR/deploy/charts ]; then
@@ -148,13 +148,13 @@ go fmt $ROOT_DIR/static/generate.go > /dev/null
 
 (
 
-echo "module github.com/banzaicloud/cluster-registry-controller$RELATIVE_ROOT_DIR/static
+echo "module wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller$RELATIVE_ROOT_DIR/static
 
-go 1.15
+go 1.16
 "
 
 ) > $ROOT_DIR/static/go.mod
 
 (cd $ROOT_DIR;
-go mod edit -replace=github.com/banzaicloud/cluster-registry-controller$RELATIVE_ROOT_DIR/static=./static
+go mod edit -replace=wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller$RELATIVE_ROOT_DIR/static=./static
 )

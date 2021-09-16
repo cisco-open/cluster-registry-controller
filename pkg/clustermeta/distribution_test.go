@@ -10,8 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"github.com/banzaicloud/cluster-registry-controller/pkg/clustermeta"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clustermeta"
 )
 
 const testdataDir = "testdata/"

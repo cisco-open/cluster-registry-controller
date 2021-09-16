@@ -1,4 +1,4 @@
-module github.com/banzaicloud/cluster-registry-controller
+module wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller
 
 go 1.16
 
@@ -26,4 +26,4 @@ require (
 	sigs.k8s.io/controller-runtime v0.6.5
 )
 
-replace github.com/banzaicloud/cluster-registry-controller/static => ./static
+replace wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/static => ./static
