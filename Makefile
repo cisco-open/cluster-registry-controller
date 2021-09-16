@@ -61,7 +61,7 @@ generate-generate:
 generate: ensure-tools go-generate ## Generate manifests, CRDs, static assets
 
 # Build the docker image
-docker-build: test
+docker-build:
 	docker build . -t ${IMG} --build-arg GITHUB_ACCESS_TOKEN="${GITHUB_ACCESS_TOKEN}"
 
 # Push the docker image

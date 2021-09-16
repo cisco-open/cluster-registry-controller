@@ -11,7 +11,7 @@ import (
 	"emperror.dev/errors"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
 )
 
@@ -85,6 +85,12 @@ func initConfiguration(v *viper.Viper, p *flag.FlagSet) {
 
 	p.String("provision-local-cluster", "", "Name of the default local cluster to provision (if not specified no provisioning occurs)")
 	_ = viper.BindPFlag("provision-local-cluster", p.Lookup("provision-local-cluster"))
+
+	p.Bool("manage-local-cluster-secret", true, "Whether to manage secret for the local cluster")
+	_ = viper.BindPFlag("manage-local-cluster-secret", p.Lookup("manage-local-cluster-secret"))
+
+	p.String("reader-service-account-name", "cluster-registry-controller-reader", "Name of the reader service account. Used for managed cluster secret")
+	_ = viper.BindPFlag("reader-service-account-name", p.Lookup("reader-service-account-name"))
 
 	v.SetDefault("syncController.workerCount", 1)
 	v.SetDefault("syncController.rateLimit.maxKeys", 1024)
