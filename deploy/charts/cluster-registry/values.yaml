@@ -21,7 +21,7 @@ securityContext:
   allowPrivilegeEscalation: false
 image:
   repository: 033498657557.dkr.ecr.us-east-2.amazonaws.com/banzaicloud/cluster-registry-controller
-  tag: v0.1.0
+  tag: v0.1.1
   pullPolicy: IfNotPresent
 
 nodeSelector: {}
