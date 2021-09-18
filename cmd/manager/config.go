@@ -92,6 +92,9 @@ func initConfiguration(v *viper.Viper, p *flag.FlagSet) {
 	p.String("reader-service-account-name", "cluster-registry-controller-reader", "Name of the reader service account. Used for managed cluster secret")
 	_ = viper.BindPFlag("reader-service-account-name", p.Lookup("reader-service-account-name"))
 
+	p.String("network-name", "default", "Name of the network this controller belongs to. It is used to determine api server endpoint address")
+	_ = viper.BindPFlag("network-name", p.Lookup("network-name"))
+
 	v.SetDefault("syncController.workerCount", 1)
 	v.SetDefault("syncController.rateLimit.maxKeys", 1024)
 	v.SetDefault("syncController.rateLimit.maxRatePerSecond", 1)

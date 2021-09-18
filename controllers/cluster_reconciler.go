@@ -5,6 +5,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"reflect"
 	"time"
 
@@ -190,7 +191,7 @@ func (r *ClusterReconciler) getRemoteCluster(ctx context.Context, cluster *clust
 		return nil, errors.WrapIf(err, "could not load kubeconfig")
 	}
 
-	rest, err := clientcmd.NewDefaultClientConfig(*clusterConfig, &clientcmd.ConfigOverrides{}).ClientConfig()
+	rest, err := clientcmd.NewDefaultClientConfig(*clusterConfig, r.getKubeconfigOverridesForNetwork(cluster, r.config.NetworkName)).ClientConfig()
 	if err != nil {
 		return nil, errors.WrapIf(err, "could not create k8s rest config")
 	}
@@ -232,6 +233,40 @@ func (r *ClusterReconciler) getRemoteCluster(ctx context.Context, cluster *clust
 	}
 
 	return remoteCluster, err
+}
+
+func (r *ClusterReconciler) getKubeconfigOverridesForNetwork(cluster *clusterregistryv1alpha1.Cluster, networkName string) *clientcmd.ConfigOverrides {
+	overrides := &clientcmd.ConfigOverrides{}
+
+	if len(cluster.Spec.KubernetesAPIEndpoints) == 0 {
+		return overrides
+	}
+
+	var endpoint clusterregistryv1alpha1.KubernetesAPIEndpoint
+	for _, apiEndpoint := range cluster.Spec.KubernetesAPIEndpoints {
+		if apiEndpoint.ClientNetwork == networkName {
+			endpoint = apiEndpoint
+
+			break
+		}
+		// use for every network if the endpoint is not network specific
+		if apiEndpoint.ClientNetwork == "" {
+			endpoint = apiEndpoint
+		}
+	}
+
+	if endpoint.ServerAddress != "" {
+		overrides.ClusterInfo.Server = (&url.URL{
+			Scheme: "https",
+			Host:   endpoint.ServerAddress,
+		}).String()
+	}
+
+	if len(endpoint.CABundle) > 0 {
+		overrides.ClusterInfo.CertificateAuthorityData = endpoint.CABundle
+	}
+
+	return overrides
 }
 
 func (r *ClusterReconciler) removeRemoteCluster(name string) error {

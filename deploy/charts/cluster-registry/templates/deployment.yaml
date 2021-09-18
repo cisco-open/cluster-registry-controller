@@ -68,6 +68,8 @@ spec:
                   fieldPath: metadata.namespace
             - name: READER_SERVICE_ACCOUNT_NAME
               value: "{{ include "cluster-registry-controller.fullname" . }}-reader"
+            - name: NETWORK_NAME
+              value: "{{ .Values.network.name }}"
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
