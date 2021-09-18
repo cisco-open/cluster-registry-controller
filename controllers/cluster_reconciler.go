@@ -246,6 +246,7 @@ func (r *ClusterReconciler) getKubeconfigOverridesForNetwork(cluster *clusterreg
 	for _, apiEndpoint := range cluster.Spec.KubernetesAPIEndpoints {
 		if apiEndpoint.ClientNetwork == networkName {
 			endpoint = apiEndpoint
+
 			break
 		}
 		// use for every network if the endpoint is not network specific
