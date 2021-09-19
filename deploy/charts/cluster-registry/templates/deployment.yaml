@@ -70,6 +70,10 @@ spec:
               value: "{{ include "cluster-registry-controller.fullname" . }}-reader"
             - name: NETWORK_NAME
               value: "{{ .Values.network.name }}"
+            - name: MANAGE_LOCAL_CLUSTER_SECRET
+              value: "{{ .Values.localCluster.manageSecret }}"
+            - name: APISERVER_ENDPOINT_ADDRESS
+              value: "{{ .Values.apiServerEndpointAddress }}"
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -13,6 +13,7 @@ type Configuration struct {
 	ManageLocalClusterSecret bool              `mapstructure:"manage-local-cluster-secret" json:"manageLocalClusterSecret,omitempty"`
 	ReaderServiceAccountName string            `mapstructure:"reader-service-account-name" json:"readerServiceAccountName,omitempty"`
 	NetworkName              string            `mapstructure:"network-name" json:"networkName,omitempty"`
+	APIServerEndpointAddress string            `mapstructure:"apiserver-endpoint-address" json:"apiServerEndpointAddress,omitempty"`
 }
 
 type ClusterController struct {

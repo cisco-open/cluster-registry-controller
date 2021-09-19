@@ -30,7 +30,7 @@ func ProvisionLocalClusterObject(c client.Client, log logr.Logger, configuration
 		return nil
 	}
 
-	newClusterSpec, err := newLocalCluster(c, configuration.Namespace, configuration.ProvisionLocalCluster)
+	newClusterSpec, err := newLocalCluster(c, configuration.Namespace, configuration.ProvisionLocalCluster, configuration.APIServerEndpointAddress)
 	if err != nil {
 		return errors.WrapIf(err, "cannot create new local cluster object")
 	}
@@ -45,7 +45,7 @@ func ProvisionLocalClusterObject(c client.Client, log logr.Logger, configuration
 	return nil
 }
 
-func newLocalCluster(c client.Client, namespace, name string) (*v1alpha1.Cluster, error) {
+func newLocalCluster(c client.Client, namespace, name, apiServerEndpointAddress string) (*v1alpha1.Cluster, error) {
 	ns := &corev1.Namespace{}
 	err := c.Get(context.Background(), types.NamespacedName{
 		Name: metav1.NamespaceSystem,
@@ -68,6 +68,11 @@ func newLocalCluster(c client.Client, namespace, name string) (*v1alpha1.Cluster
 				SecretRef: v1alpha1.NamespacedName{
 					Name:      name,
 					Namespace: namespace,
+				},
+			},
+			KubernetesAPIEndpoints: []v1alpha1.KubernetesAPIEndpoint{
+				{
+					ServerAddress: apiServerEndpointAddress,
 				},
 			},
 		},
