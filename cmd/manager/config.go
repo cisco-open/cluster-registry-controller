@@ -95,6 +95,9 @@ func initConfiguration(v *viper.Viper, p *flag.FlagSet) {
 	p.String("network-name", "default", "Name of the network this controller belongs to. It is used to determine api server endpoint address")
 	_ = viper.BindPFlag("network-name", p.Lookup("network-name"))
 
+	p.String("apiserver-endpoint-address", "", "Endpoint address of the API server of the cluster the controller is running on. It is used in the managed cluster secret and/or in the provisioned local cluster resource if one or both of those features are turned on.")
+	_ = viper.BindPFlag("apiserver-endpoint-address", p.Lookup("apiserver-endpoint-address"))
+
 	v.SetDefault("syncController.workerCount", 1)
 	v.SetDefault("syncController.rateLimit.maxKeys", 1024)
 	v.SetDefault("syncController.rateLimit.maxRatePerSecond", 1)
