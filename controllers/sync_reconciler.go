@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/util"
 
@@ -369,8 +370,6 @@ func (r *syncReconciler) mutateObject(current *unstructured.Unstructured, matche
 }
 
 func (r *syncReconciler) deleteResource(ctx context.Context, obj *unstructured.Unstructured, log logr.Logger) error {
-	log.Info("object was removed, trying to delete locally as well")
-
 	object := obj.DeepCopy()
 	object.SetGroupVersionKind(r.localGVK)
 	current := object.DeepCopy()
@@ -404,6 +403,8 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj *unstructured.U
 		return err
 	}
 
+	log.Info("object deleted")
+
 	return nil
 }
 
@@ -417,6 +418,11 @@ func (r *syncReconciler) getObjectDesiredState() *util.DynamicDesiredState {
 			metaObj, err := meta.Accessor(desired)
 			if err != nil {
 				return false, err
+			}
+
+			// sync disabled for this resource
+			if _, ok := metaObj.GetAnnotations()[clusterregistryv1alpha1.SyncDisabledAnnotation]; ok {
+				return false, nil
 			}
 
 			ownerClusterID := metaObj.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
