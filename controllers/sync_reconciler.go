@@ -44,6 +44,7 @@ type syncReconciler struct {
 	gvk             schema.GroupVersionKind
 	localGVK        schema.GroupVersionKind
 	localClusterID  string
+	localCluster    *clusterregistryv1alpha1.Cluster
 	localMgr        ctrl.Manager
 	localRecorder   record.EventRecorder
 	clustersManager *clusters.Manager
@@ -97,11 +98,23 @@ func (r *syncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return result, nil
 }
 
+func (r *syncReconciler) initObjectFromGVK(gvk schema.GroupVersionKind) client.Object {
+	var object client.Object
+	obj, err := r.localMgr.GetClient().Scheme().New(gvk)
+	if err != nil {
+		object = &unstructured.Unstructured{}
+		object.GetObjectKind().SetGroupVersionKind(gvk)
+	} else {
+		object = obj.(client.Object)
+	}
+
+	return object
+}
+
 func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.GetLogger().WithValues("resource", req.NamespacedName)
 
-	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(r.gvk)
+	obj := r.initObjectFromGVK(r.gvk)
 	obj.SetName(req.Name)
 	obj.SetNamespace(req.Namespace)
 
@@ -171,7 +184,7 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		},
 	)
 
-	desiredObject := obj.DeepCopy()
+	desiredObject := obj.DeepCopyObject().(client.Object)
 	_, err = rec.ReconcileResource(obj, r.getObjectDesiredState())
 	if apierrors.IsAlreadyExists(errors.Cause(err)) {
 		log.Info("object already exists, requeue")
@@ -221,12 +234,18 @@ func (r *syncReconciler) Start(ctx context.Context) error {
 		r.localClusterID = string(localClusterID)
 		r.GetLogger().Info("set local cluster id", "id", r.localClusterID)
 	}
+	if r.localCluster == nil {
+		clusters, err := GetClusters(r.GetContext(), r.localMgr.GetClient())
+		if err != nil {
+			return errors.WrapIf(err, "could not get clusters")
+		}
+		localCluster := clusters[types.UID(r.localClusterID)]
+		r.localCluster = localCluster.DeepCopy()
+	}
 
 	// init local informer
 	_, gvk := clusterregistryv1alpha1.MatchedRules(r.rule.Spec.Rules).GetMutatedGVK(schema.GroupVersionKind(r.rule.Spec.GVK))
-	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(gvk)
-
+	obj := r.initObjectFromGVK(gvk)
 	err := r.initLocalInformer(ctx, obj)
 	if err != nil {
 		return errors.WithStackIf(err)
@@ -242,9 +261,7 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 	}
 
 	gvk := schema.GroupVersionKind(r.rule.Spec.GVK)
-
-	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(gvk)
+	obj := r.initObjectFromGVK(gvk)
 
 	// set watcher for gvk
 	err = ctrl.Watch(
@@ -297,10 +314,10 @@ func (r *syncReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager)
 	return r.ManagedReconciler.SetupWithManager(ctx, mgr)
 }
 
-func (r *syncReconciler) mutateObject(current *unstructured.Unstructured, matchedRules clusterregistryv1alpha1.MatchedRules) (*unstructured.Unstructured, error) {
+func (r *syncReconciler) mutateObject(current client.Object, matchedRules clusterregistryv1alpha1.MatchedRules) (client.Object, error) {
 	var ok bool
 
-	obj := current.DeepCopy()
+	obj := current.DeepCopyObject().(client.Object)
 
 	objAnnotations := obj.GetAnnotations()
 	if objAnnotations == nil {
@@ -348,31 +365,48 @@ func (r *syncReconciler) mutateObject(current *unstructured.Unstructured, matche
 	obj.SetCreationTimestamp(metav1.Time{})
 	obj.SetFinalizers(nil)
 
-	gvk := resources.ConvertGVK(obj.GetObjectKind().GroupVersionKind())
-	patchFunc, err := resources.PatchYAMLModifier(resources.K8SResourceOverlay{
-		GVK:     &gvk,
-		Patches: matchedRules.GetMutationOverrides(),
-	}, resources.NewObjectParser(runtime.NewScheme()))
-	if err != nil {
-		return nil, errors.WrapIf(err, "could not get patch func for object")
+	if patches := matchedRules.GetMutationOverrides(); len(patches) > 0 {
+		modifiedPatches, err := util.K8SResourceOverlayPatchExecuteTemplates(patches, map[string]interface{}{
+			"Object":  obj,
+			"Cluster": r.localCluster,
+		})
+		if err != nil {
+			return nil, errors.WrapIf(err, "could not execute templates on patches")
+		}
+		patches = modifiedPatches
+
+		gvk := resources.ConvertGVK(obj.GetObjectKind().GroupVersionKind())
+		patchFunc, err := resources.PatchYAMLModifier(resources.K8SResourceOverlay{
+			GVK:     &gvk,
+			Patches: patches,
+		}, resources.NewObjectParser(r.localMgr.GetScheme()))
+		if err != nil {
+			return nil, errors.WrapIf(err, "could not get patch func for object")
+		}
+
+		patchedObject, err := patchFunc(obj)
+		if err != nil {
+			return nil, errors.WrapIf(err, "could not patch object")
+		}
+
+		if obj, ok = patchedObject.(client.Object); !ok {
+			return nil, errors.New("invalid object")
+		}
 	}
 
-	patchedObject, err := patchFunc(obj)
-	if err != nil {
-		return nil, errors.WrapIf(err, "could not patch object")
-	}
-
-	if obj, ok = patchedObject.(*unstructured.Unstructured); !ok {
-		return nil, errors.New("invalid object")
+	if current.GetName() != obj.GetName() {
+		objAnnotations := obj.GetAnnotations()
+		objAnnotations["cluster-registry.k8s.cisco.com/original-name"] = current.GetName()
+		obj.SetAnnotations(objAnnotations)
 	}
 
 	return obj, nil
 }
 
-func (r *syncReconciler) deleteResource(ctx context.Context, obj *unstructured.Unstructured, log logr.Logger) error {
-	object := obj.DeepCopy()
-	object.SetGroupVersionKind(r.localGVK)
-	current := object.DeepCopy()
+func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, log logr.Logger) error {
+	object := obj.DeepCopyObject().(client.Object)
+	object.GetObjectKind().SetGroupVersionKind(r.localGVK)
+	current := object.DeepCopyObject().(client.Object)
 	err := r.localMgr.GetClient().Get(ctx, types.NamespacedName{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
@@ -398,7 +432,7 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj *unstructured.U
 		return nil
 	}
 
-	err = r.localMgr.GetClient().Delete(ctx, object)
+	err = r.localMgr.GetClient().Delete(ctx, obj)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
@@ -412,8 +446,19 @@ func (r *syncReconciler) isOwnedByAnotherAliveCluster(ownerClusterID string) boo
 	return ownerClusterID != "" && r.clustersManager.GetAliveClustersByID()[ownerClusterID] != nil && ownerClusterID != r.clusterID
 }
 
-func (r *syncReconciler) getObjectDesiredState() *util.DynamicDesiredState {
-	return &util.DynamicDesiredState{
+func (r *syncReconciler) getObjectDesiredState() *reconciler.DynamicDesiredState {
+	return &reconciler.DynamicDesiredState{
+		BeforeUpdateFunc: func(current, desired runtime.Object) error {
+			for _, f := range []func(current, desired runtime.Object) error{
+				reconciler.ServiceIPModifier,
+			} {
+				err := f(current, desired)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
 		ShouldCreateFunc: func(desired runtime.Object) (bool, error) {
 			metaObj, err := meta.Accessor(desired)
 			if err != nil {
@@ -469,7 +514,7 @@ func (r *syncReconciler) setQueue(q workqueue.RateLimitingInterface) {
 	r.queue = q
 }
 
-func (r *syncReconciler) initLocalInformer(ctx context.Context, obj *unstructured.Unstructured) error {
+func (r *syncReconciler) initLocalInformer(ctx context.Context, obj client.Object) error {
 	key := obj.GetObjectKind().GroupVersionKind().String()
 
 	if _, ok := r.localInformers[key]; ok {
@@ -486,10 +531,14 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj *unstructure
 	err = r.ctrl.Watch(&source.Informer{
 		Informer: localInformer,
 	}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+		name := obj.GetName()
+		if originalName, ok := obj.GetAnnotations()["cluster-registry.k8s.cisco.com/original-name"]; ok {
+			name = originalName
+		}
 		return []reconcile.Request{
 			{
 				NamespacedName: types.NamespacedName{
-					Name:      obj.GetName(),
+					Name:      name,
 					Namespace: obj.GetNamespace(),
 				},
 			},
