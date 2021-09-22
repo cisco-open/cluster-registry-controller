@@ -54,10 +54,10 @@ func (r *ResourceSyncRuleReconciler) setQueue(q workqueue.RateLimitingInterface)
 	r.queue = q
 }
 
-func (r *ResourceSyncRuleReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *ResourceSyncRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.GetLogger().WithValues("rule", req.NamespacedName)
 
-	result, err := r.reconcile(req, log)
+	result, err := r.reconcile(ctx, req, log)
 	if err != nil {
 		//nolint:errorlint
 		if e, ok := err.(interface{ IsPermanent() bool }); ok && e.IsPermanent() {
@@ -69,11 +69,11 @@ func (r *ResourceSyncRuleReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 	return result, errors.WithStackIf(err)
 }
 
-func (r *ResourceSyncRuleReconciler) reconcile(req ctrl.Request, log logr.Logger) (ctrl.Result, error) {
+func (r *ResourceSyncRuleReconciler) reconcile(ctx context.Context, req ctrl.Request, log logr.Logger) (ctrl.Result, error) {
 	log.Info("reconciling")
 
 	sr := &clusterregistryv1alpha1.ResourceSyncRule{}
-	err := r.GetManager().GetClient().Get(r.GetContext(), req.NamespacedName, sr)
+	err := r.GetManager().GetClient().Get(ctx, req.NamespacedName, sr)
 	if apierrors.IsNotFound(err) {
 		for _, cluster := range r.clustersManager.GetAll() {
 			cluster.RemoveControllerByName(req.NamespacedName.Name)
@@ -145,7 +145,7 @@ func (r *ResourceSyncRuleReconciler) SetupWithController(ctx context.Context, ct
 	r.clustersManager.AddOnAfterAddFunc(func(c *clusters.Cluster) {
 		if r.queue != nil {
 			rules := &clusterregistryv1alpha1.ResourceSyncRuleList{}
-			err := r.GetManager().GetClient().List(r.GetContext(), rules)
+			err := r.GetManager().GetClient().List(ctx, rules)
 			if err != nil {
 				r.GetLogger().Error(err, "could not list resource sync rules")
 			}

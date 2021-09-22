@@ -85,8 +85,8 @@ func NewSyncReconciler(name string, localMgr ctrl.Manager, rule *clusterregistry
 	return r, nil
 }
 
-func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	result, err := r.reconcile(req)
+func (r *syncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	result, err := r.reconcile(ctx, req)
 	if err != nil {
 		r.localRecorder.Event(r.rule, corev1.EventTypeWarning, "ObjectNotReconciled", fmt.Sprintf("could not reconcile (resource: %s): %s", req, err.Error()))
 
@@ -96,7 +96,7 @@ func (r *syncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return result, nil
 }
 
-func (r *syncReconciler) reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.GetLogger().WithValues("resource", req.NamespacedName)
 
 	obj := &unstructured.Unstructured{}
@@ -108,7 +108,7 @@ func (r *syncReconciler) reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// check namespace existence
 	if req.Namespace != "" {
-		err := r.localMgr.GetClient().Get(r.GetContext(), types.NamespacedName{
+		err := r.localMgr.GetClient().Get(ctx, types.NamespacedName{
 			Name: req.Namespace,
 		}, &corev1.Namespace{})
 		if err != nil && !apierrors.IsNotFound(err) {
@@ -126,9 +126,9 @@ func (r *syncReconciler) reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	err := r.GetManager().GetClient().Get(r.GetContext(), req.NamespacedName, obj)
+	err := r.GetManager().GetClient().Get(ctx, req.NamespacedName, obj)
 	if apierrors.IsNotFound(err) {
-		return ctrl.Result{}, r.deleteResource(obj, log)
+		return ctrl.Result{}, r.deleteResource(ctx, obj, log)
 	}
 	if err != nil {
 		return ctrl.Result{}, errors.WrapIf(err, "could not get object")
@@ -184,7 +184,7 @@ func (r *syncReconciler) reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	log.Info("object reconciled")
 
-	err = r.localMgr.GetClient().Get(r.GetContext(), client.ObjectKey{
+	err = r.localMgr.GetClient().Get(ctx, client.ObjectKey{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 	}, obj)
@@ -197,7 +197,7 @@ func (r *syncReconciler) reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	if matchedRules.GetMutationSyncStatus() {
 		desiredObject.SetResourceVersion(obj.GetResourceVersion())
-		err = r.localMgr.GetClient().Status().Update(r.GetContext(), desiredObject)
+		err = r.localMgr.GetClient().Status().Update(ctx, desiredObject)
 		if err != nil {
 			return ctrl.Result{}, errors.WrapIf(err, "could not update object status")
 		}
@@ -210,10 +210,10 @@ func (r *syncReconciler) reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
-func (r *syncReconciler) Start() error {
+func (r *syncReconciler) Start(ctx context.Context) error {
 	// set local cluster id
 	if r.localClusterID == "" {
-		localClusterID, err := GetClusterID(r.GetContext(), r.localMgr.GetClient())
+		localClusterID, err := GetClusterID(ctx, r.localMgr.GetClient())
 		if err != nil {
 			return errors.WrapIf(err, "could not get local cluster id")
 		}
@@ -226,7 +226,7 @@ func (r *syncReconciler) Start() error {
 	obj := &unstructured.Unstructured{}
 	obj.SetGroupVersionKind(gvk)
 
-	err := r.initLocalInformer(r.GetContext(), obj)
+	err := r.initLocalInformer(ctx, obj)
 	if err != nil {
 		return errors.WithStackIf(err)
 	}
@@ -246,30 +246,32 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 	obj.SetGroupVersionKind(gvk)
 
 	// set watcher for gvk
-	err = ctrl.Watch(&source.Kind{
-		Type: obj,
-	}, &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(obj handler.MapObject) []reconcile.Request {
+	err = ctrl.Watch(
+		&source.Kind{
+			Type: obj,
+		},
+		handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 			return []reconcile.Request{
 				{
 					NamespacedName: types.NamespacedName{
-						Name:      obj.Meta.GetName(),
-						Namespace: obj.Meta.GetNamespace(),
+						Name:      obj.GetName(),
+						Namespace: obj.GetNamespace(),
 					},
 				},
 			}
 		}),
-	}, predicate.NewPredicateFuncs(func(meta metav1.Object, object runtime.Object) bool {
-		object.GetObjectKind().SetGroupVersionKind(gvk)
-		ok, _, err := r.rule.Match(object)
-		if err != nil {
-			r.GetLogger().Error(err, "could not match object")
+		predicate.NewPredicateFuncs(func(object client.Object) bool {
+			object.GetObjectKind().SetGroupVersionKind(gvk)
+			ok, _, err := r.rule.Match(object)
+			if err != nil {
+				r.GetLogger().Error(err, "could not match object")
 
-			return false
-		}
+				return false
+			}
 
-		return ok
-	}))
+			return ok
+		}),
+	)
 	if err != nil {
 		return err
 	}
@@ -366,13 +368,13 @@ func (r *syncReconciler) mutateObject(current *unstructured.Unstructured, matche
 	return obj, nil
 }
 
-func (r *syncReconciler) deleteResource(obj *unstructured.Unstructured, log logr.Logger) error {
+func (r *syncReconciler) deleteResource(ctx context.Context, obj *unstructured.Unstructured, log logr.Logger) error {
 	log.Info("object was removed, trying to delete locally as well")
 
 	object := obj.DeepCopy()
 	object.SetGroupVersionKind(r.localGVK)
 	current := object.DeepCopy()
-	err := r.localMgr.GetClient().Get(r.GetContext(), types.NamespacedName{
+	err := r.localMgr.GetClient().Get(ctx, types.NamespacedName{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 	}, current)
@@ -397,7 +399,7 @@ func (r *syncReconciler) deleteResource(obj *unstructured.Unstructured, log logr
 		return nil
 	}
 
-	err = r.localMgr.GetClient().Delete(r.GetContext(), object)
+	err = r.localMgr.GetClient().Delete(ctx, object)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
@@ -477,18 +479,16 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj *unstructure
 
 	err = r.ctrl.Watch(&source.Informer{
 		Informer: localInformer,
-	}, &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(obj handler.MapObject) []reconcile.Request {
-			return []reconcile.Request{
-				{
-					NamespacedName: types.NamespacedName{
-						Name:      obj.Meta.GetName(),
-						Namespace: obj.Meta.GetNamespace(),
-					},
+	}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+		return []reconcile.Request{
+			{
+				NamespacedName: types.NamespacedName{
+					Name:      obj.GetName(),
+					Namespace: obj.GetNamespace(),
 				},
-			}
-		}),
-	}, r.localPredicate())
+			},
+		}
+	}), r.localPredicate())
 	if err != nil {
 		return errors.WrapIf(err, "could not create watch for local informer")
 	}
@@ -501,17 +501,17 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj *unstructure
 func (r *syncReconciler) localPredicate() predicate.Funcs {
 	return predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
-			_, ok := e.Meta.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
+			_, ok := e.Object.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
 
 			return ok
 		},
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			_, ok := e.MetaOld.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
+			_, ok := e.ObjectOld.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
 
 			return ok
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			_, ok := e.Meta.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
+			_, ok := e.Object.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
 
 			return ok
 		},

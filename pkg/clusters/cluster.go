@@ -368,7 +368,7 @@ func (c *Cluster) StartManager() error {
 	}
 
 	go func() {
-		err = c.mgr.Start(c.mgrCtx.Done())
+		err = c.mgr.Start(c.mgrCtx)
 		if err != nil {
 			c.log.Error(err, "could not start manager")
 		} else {
@@ -380,7 +380,7 @@ func (c *Cluster) StartManager() error {
 		c.mgr = nil
 	}()
 
-	c.mgr.GetCache().WaitForCacheSync(c.mgrCtx.Done())
+	c.mgr.GetCache().WaitForCacheSync(c.mgrCtx)
 
 	c.log.V(2).Info("manager started")
 

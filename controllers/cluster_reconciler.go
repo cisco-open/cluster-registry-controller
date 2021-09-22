@@ -52,10 +52,10 @@ func NewClusterReconciler(name string, log logr.Logger, clustersManager *cluster
 	}
 }
 
-func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.GetLogger().WithValues("cluster", req.NamespacedName)
 
-	err := r.setClusterID()
+	err := r.setClusterID(ctx)
 	if err != nil {
 		return ctrl.Result{}, errors.WithStackIf(err)
 	}
@@ -63,7 +63,7 @@ func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.Info("reconciling")
 
 	cluster := &clusterregistryv1alpha1.Cluster{}
-	err = r.GetManager().GetClient().Get(r.GetContext(), req.NamespacedName, cluster)
+	err = r.GetManager().GetClient().Get(ctx, req.NamespacedName, cluster)
 	if apierrors.IsNotFound(err) {
 		removeErr := r.removeRemoteCluster(req.NamespacedName.Name)
 		if removeErr != nil && !errors.Is(errors.Cause(removeErr), clusters.ErrClusterNotFound) {
@@ -71,7 +71,7 @@ func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		// trigger local reconciles to fix possible local conflict status
-		if err = r.triggerLocalClusterReconciles(); err != nil {
+		if err = r.triggerLocalClusterReconciles(ctx); err != nil {
 			return ctrl.Result{}, errors.WithStackIf(err)
 		}
 
@@ -94,7 +94,7 @@ func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		cluster.Status.Type = clusterregistryv1alpha1.ClusterTypeLocal
 	} else if cluster.Status.Type == clusterregistryv1alpha1.ClusterTypeLocal {
-		if err := r.triggerLocalClusterReconciles(); err != nil {
+		if err := r.triggerLocalClusterReconciles(ctx); err != nil {
 			return ctrl.Result{}, errors.WithStackIf(err)
 		}
 	}
@@ -111,15 +111,15 @@ func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		cluster.Status = cluster.Status.Reset()
 		cluster.Status.State = clusterregistryv1alpha1.ClusterStateDisabled
 		currentConditions = ClusterConditionsMap{}
-		err = UpdateCluster(r.GetContext(), reconcileError, r.GetManager().GetClient(), cluster, currentConditions, log)
+		err = UpdateCluster(ctx, reconcileError, r.GetManager().GetClient(), cluster, currentConditions, log)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
 		if isClusterLocal {
-			reconcileError = r.reconcileLocalCluster(r.GetContext(), cluster, currentConditions)
+			reconcileError = r.reconcileLocalCluster(ctx, cluster, currentConditions)
 		} else {
-			reconcileError = r.reconcileRemoteCluster(r.GetContext(), cluster, currentConditions)
+			reconcileError = r.reconcileRemoteCluster(ctx, cluster, currentConditions)
 		}
 
 		SetCondition(cluster, currentConditions, ClusterReadyCondition(err), r.GetRecorder())
@@ -127,7 +127,7 @@ func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	if isClusterLocal || reconcileError != nil {
 		// status needs to be updated if the cluster is local or if there was any error setting up a remote cluster instance
-		err = UpdateCluster(r.GetContext(), reconcileError, r.GetManager().GetClient(), cluster, currentConditions, log)
+		err = UpdateCluster(ctx, reconcileError, r.GetManager().GetClient(), cluster, currentConditions, log)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -354,9 +354,9 @@ func (r *ClusterReconciler) triggerClusterReconcile(cluster *clusterregistryv1al
 	}
 }
 
-func (r *ClusterReconciler) triggerLocalClusterReconciles() error {
+func (r *ClusterReconciler) triggerLocalClusterReconciles(ctx context.Context) error {
 	clusters := &clusterregistryv1alpha1.ClusterList{}
-	err := r.GetManager().GetClient().List(r.GetContext(), clusters)
+	err := r.GetManager().GetClient().List(ctx, clusters)
 	if err != nil {
 		return err
 	}
@@ -371,9 +371,9 @@ func (r *ClusterReconciler) triggerLocalClusterReconciles() error {
 	return nil
 }
 
-func (r *ClusterReconciler) setClusterID() error {
+func (r *ClusterReconciler) setClusterID(ctx context.Context) error {
 	if r.clusterID == "" {
-		clusterID, err := GetClusterID(r.GetContext(), r.GetManager().GetClient())
+		clusterID, err := GetClusterID(ctx, r.GetManager().GetClient())
 		if err != nil {
 			return errors.WrapIf(err, "could not get cluster id")
 		}
@@ -406,8 +406,8 @@ func (r *ClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manag
 
 	b := ctrl.NewControllerManagedBy(mgr)
 
-	r.watchLocalClustersForConflict(b)
-	r.watchClusterRegistrySecrets(b)
+	r.watchLocalClustersForConflict(ctx, b)
+	r.watchClusterRegistrySecrets(ctx, b)
 
 	ctrl, err := b.For(&clusterregistryv1alpha1.Cluster{
 		TypeMeta: metav1.TypeMeta{
@@ -416,10 +416,10 @@ func (r *ClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manag
 		},
 	}, builder.WithPredicates(predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			if e.MetaNew.GetGeneration() != e.MetaOld.GetGeneration() {
+			if e.ObjectNew.GetGeneration() != e.ObjectOld.GetGeneration() {
 				return true
 			}
-			if !reflect.DeepEqual(e.MetaOld.GetAnnotations(), e.MetaNew.GetAnnotations()) {
+			if !reflect.DeepEqual(e.ObjectOld.GetAnnotations(), e.ObjectNew.GetAnnotations()) {
 				return true
 			}
 
