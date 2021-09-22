@@ -11,9 +11,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
 
 	"github.com/banzaicloud/cluster-registry/api/v1alpha1"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
 )
 
 func ProvisionLocalClusterObject(c client.Client, log logr.Logger, configuration config.Configuration) error {

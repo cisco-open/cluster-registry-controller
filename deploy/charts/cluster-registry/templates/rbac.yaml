@@ -28,6 +28,12 @@ metadata:
     {{- include "cluster-registry-controller.labels" . | nindent 4 }}
     cluster-registry.k8s.cisco.com/controller-aggregated: "true"
 rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - '*'
 - apiGroups: ["clusterregistry.k8s.cisco.com"]
   resources: ["*"]
   verbs:

@@ -17,16 +17,15 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	// +kubebuilder:scaffold:imports
+	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
+	"github.com/banzaicloud/operator-tools/pkg/logger"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/controllers"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/signals"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/util"
-
-	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
-	"github.com/banzaicloud/operator-tools/pkg/logger"
-	//nolint:gci
-	// +kubebuilder:scaffold:imports
 )
 
 var (
