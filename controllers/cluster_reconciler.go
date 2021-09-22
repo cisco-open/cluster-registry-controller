@@ -24,13 +24,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
+	"github.com/banzaicloud/operator-tools/pkg/reconciler"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clustermeta"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/util"
-
-	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
-	"github.com/banzaicloud/operator-tools/pkg/reconciler"
 )
 
 type ClusterReconciler struct {

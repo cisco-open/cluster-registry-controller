@@ -17,13 +17,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	// +kubebuilder:scaffold:imports
+	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/controllers"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
-
-	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
-	//nolint:gci
-	// +kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

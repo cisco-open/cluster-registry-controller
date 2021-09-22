@@ -29,13 +29,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/util"
-
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	"github.com/banzaicloud/k8s-objectmatcher/patch"
 	"github.com/banzaicloud/operator-tools/pkg/reconciler"
 	"github.com/banzaicloud/operator-tools/pkg/resources"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/util"
 )
 
 type syncReconciler struct {
@@ -105,7 +104,7 @@ func (r *syncReconciler) initObjectFromGVK(gvk schema.GroupVersionKind) client.O
 		object = &unstructured.Unstructured{}
 		object.GetObjectKind().SetGroupVersionKind(gvk)
 	} else {
-		object = obj.(client.Object)
+		object = obj.(client.Object) // nolint:forcetypeassert
 	}
 
 	return object
@@ -184,7 +183,11 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		},
 	)
 
-	desiredObject := obj.DeepCopyObject().(client.Object)
+	var desiredObject client.Object
+	if desiredObject, ok = obj.DeepCopyObject().(client.Object); !ok {
+		return ctrl.Result{}, errors.New("invalid object")
+	}
+
 	_, err = rec.ReconcileResource(obj, r.getObjectDesiredState())
 	if apierrors.IsAlreadyExists(errors.Cause(err)) {
 		log.Info("object already exists, requeue")
@@ -317,7 +320,10 @@ func (r *syncReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager)
 func (r *syncReconciler) mutateObject(current client.Object, matchedRules clusterregistryv1alpha1.MatchedRules) (client.Object, error) {
 	var ok bool
 
-	obj := current.DeepCopyObject().(client.Object)
+	var obj client.Object
+	if obj, ok = current.DeepCopyObject().(client.Object); !ok {
+		return nil, errors.New("invalid object")
+	}
 
 	objAnnotations := obj.GetAnnotations()
 	if objAnnotations == nil {
@@ -404,9 +410,17 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 }
 
 func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, log logr.Logger) error {
-	object := obj.DeepCopyObject().(client.Object)
+	var object, current client.Object
+	var ok bool
+	if object, ok = obj.DeepCopyObject().(client.Object); !ok {
+		return errors.New("invalid object")
+	}
+
 	object.GetObjectKind().SetGroupVersionKind(r.localGVK)
-	current := object.DeepCopyObject().(client.Object)
+	if current, ok = object.DeepCopyObject().(client.Object); !ok {
+		return errors.New("invalid object")
+	}
+
 	err := r.localMgr.GetClient().Get(ctx, types.NamespacedName{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
@@ -457,6 +471,7 @@ func (r *syncReconciler) getObjectDesiredState() *reconciler.DynamicDesiredState
 					return err
 				}
 			}
+
 			return nil
 		},
 		ShouldCreateFunc: func(desired runtime.Object) (bool, error) {
@@ -535,6 +550,7 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj client.Objec
 		if originalName, ok := obj.GetAnnotations()["cluster-registry.k8s.cisco.com/original-name"]; ok {
 			name = originalName
 		}
+
 		return []reconcile.Request{
 			{
 				NamespacedName: types.NamespacedName{

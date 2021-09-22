@@ -17,6 +17,8 @@ import (
 )
 
 func TestK8SResourceOverlayPatchExecuteTemplate(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
 		patch   resources.K8SResourceOverlayPatch
 		object  runtime.Object
@@ -52,7 +54,7 @@ func TestK8SResourceOverlayPatchExecuteTemplate(t *testing.T) {
 			t.Fatal(err)
 		}
 		if utils.PointerToString(result.Value) != test.wanted {
-			t.Fatal(fmt.Errorf("%s != %s", utils.PointerToString(result.Value), test.wanted))
+			t.Fatal(fmt.Errorf("%s != %s", utils.PointerToString(result.Value), test.wanted)) // nolint:goerr113
 		}
 	}
 }

@@ -8,12 +8,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/controllers"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
 
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	"github.com/banzaicloud/operator-tools/pkg/resources"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/controllers"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
+	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
 )
 
 func AddClustersSyncRule(clustersManager *clusters.Manager, mgr ctrl.Manager, log logr.Logger, config config.Configuration) {
