@@ -101,8 +101,8 @@ func initConfiguration(v *viper.Viper, p *flag.FlagSet) {
 
 	v.SetDefault("syncController.workerCount", 1)
 	v.SetDefault("syncController.rateLimit.maxKeys", 1024)
-	v.SetDefault("syncController.rateLimit.maxRatePerSecond", 1)
-	v.SetDefault("syncController.rateLimit.maxBurst", 5)
+	v.SetDefault("syncController.rateLimit.maxRatePerSecond", 5)
+	v.SetDefault("syncController.rateLimit.maxBurst", 10)
 	v.SetDefault("clusterController.workerCount", 2)
 	v.SetDefault("clusterController.refreshIntervalSeconds", 0)
 
