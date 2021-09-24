@@ -370,8 +370,6 @@ spec:
                               namespace:
                                 type: string
                             type: object
-                        required:
-                        - namespaces
                         type: object
                       type: array
                     mutations:
