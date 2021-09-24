@@ -43,7 +43,6 @@ type syncReconciler struct {
 	gvk             schema.GroupVersionKind
 	localGVK        schema.GroupVersionKind
 	localClusterID  string
-	localCluster    *clusterregistryv1alpha1.Cluster
 	localMgr        ctrl.Manager
 	localRecorder   record.EventRecorder
 	clustersManager *clusters.Manager
@@ -117,8 +116,6 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	obj.SetName(req.Name)
 	obj.SetNamespace(req.Namespace)
 
-	log.Info("reconciling", "gvk", r.gvk)
-
 	// check namespace existence
 	if req.Namespace != "" {
 		err := r.localMgr.GetClient().Get(ctx, types.NamespacedName{
@@ -157,7 +154,9 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			r.localRecorder.Event(r.rule, corev1.EventTypeWarning, "ObjectReconcileRateLimited", fmt.Sprintf("%s (resource: %s)", msg, req))
 			log.Info(msg)
 
-			return ctrl.Result{}, nil
+			return ctrl.Result{
+				RequeueAfter: time.Second * 30, // nolint:gomnd
+			}, nil
 		}
 	}
 
@@ -168,6 +167,8 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	if err != nil {
 		return ctrl.Result{}, errors.WrapIf(err, "could not match object")
 	}
+
+	log.Info("reconciling", "gvk", r.gvk)
 
 	obj, err = r.mutateObject(obj, matchedRules)
 	if err != nil {
@@ -236,14 +237,6 @@ func (r *syncReconciler) Start(ctx context.Context) error {
 		}
 		r.localClusterID = string(localClusterID)
 		r.GetLogger().Info("set local cluster id", "id", r.localClusterID)
-	}
-	if r.localCluster == nil {
-		clusters, err := GetClusters(r.GetContext(), r.localMgr.GetClient())
-		if err != nil {
-			return errors.WrapIf(err, "could not get clusters")
-		}
-		localCluster := clusters[types.UID(r.localClusterID)]
-		r.localCluster = localCluster.DeepCopy()
 	}
 
 	// init local informer
@@ -370,11 +363,28 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 	obj.SetSelfLink("")
 	obj.SetCreationTimestamp(metav1.Time{})
 	obj.SetFinalizers(nil)
+	obj.SetOwnerReferences(nil)
 
-	if patches := matchedRules.GetMutationOverrides(); len(patches) > 0 {
+	if patches := matchedRules.GetMutationOverrides(); len(patches) > 0 { // nolint:nestif
+		clusters, err := GetClusters(r.GetContext(), r.localMgr.GetClient())
+		if err != nil {
+			return nil, errors.WrapIf(err, "could not get clusters")
+		}
+
+		var localCluster clusterregistryv1alpha1.Cluster
+		if localCluster, ok = clusters[types.UID(r.localClusterID)]; !ok {
+			return nil, errors.NewWithDetails("could not find local cluster by id", "id", r.localClusterID)
+		}
+
+		var syncedCluster clusterregistryv1alpha1.Cluster
+		if syncedCluster, ok = clusters[types.UID(r.clusterID)]; !ok {
+			return nil, errors.NewWithDetails("could not find synced cluster by id", "id", r.localClusterID)
+		}
+
 		modifiedPatches, err := util.K8SResourceOverlayPatchExecuteTemplates(patches, map[string]interface{}{
-			"Object":  obj,
-			"Cluster": r.localCluster,
+			"Object":       obj,
+			"Cluster":      syncedCluster.DeepCopy(),
+			"LocalCluster": localCluster.DeepCopy(),
 		})
 		if err != nil {
 			return nil, errors.WrapIf(err, "could not execute templates on patches")
