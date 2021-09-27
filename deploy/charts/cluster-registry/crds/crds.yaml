@@ -215,6 +215,8 @@ spec:
     kind: ResourceSyncRule
     listKind: ResourceSyncRuleList
     plural: resourcesyncrules
+    shortNames:
+    - rsr
     singular: resourcesyncrule
   scope: Cluster
   versions:
@@ -370,8 +372,6 @@ spec:
                               namespace:
                                 type: string
                             type: object
-                        required:
-                        - namespaces
                         type: object
                       type: array
                     mutations:

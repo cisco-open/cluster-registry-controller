@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"emperror.dev/errors"
+	"github.com/cenkalti/backoff"
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -74,6 +75,50 @@ func (c *managedController) Start(ctx context.Context, mgr ctrl.Manager) error {
 	c.reconciler.SetLogger(c.log)
 
 	var err error
+
+	check := func() error {
+		err = c.reconciler.PreCheck(c.ctrlContext)
+		if err != nil {
+			return errors.WrapIf(err, "pre check error")
+		}
+
+		err = c.start()
+		if err != nil {
+			return errors.WrapIf(err, "could not start controller")
+		}
+
+		return nil
+	}
+
+	go func() {
+		err = check()
+		if err != nil {
+			c.log.Error(err, "")
+		} else {
+			return
+		}
+		ticker := backoff.NewTicker(backoff.NewExponentialBackOff())
+		for {
+			select {
+			case <-ticker.C:
+				err = check()
+				if err != nil {
+					c.log.Error(err, "")
+				} else {
+					return
+				}
+			case <-c.ctrlContext.Done():
+				return
+			}
+		}
+	}()
+
+	return nil
+}
+
+func (c *managedController) start() error {
+	var err error
+
 	c.ctrl, err = controller.NewUnmanaged(c.GetName(), c.mgr, controller.Options{
 		Reconciler: c.reconciler,
 		Log:        c.log,
@@ -91,9 +136,9 @@ func (c *managedController) Start(ctx context.Context, mgr ctrl.Manager) error {
 	go func() {
 		// Block until our controller manager is elected leader. We presume our entire
 		// process will terminate if we lose leadership, so we don't need to handle that.
-		<-mgr.Elected()
+		<-c.mgr.Elected()
 
-		started := mgr.GetCache().WaitForCacheSync(c.ctrlContext)
+		started := c.mgr.GetCache().WaitForCacheSync(c.ctrlContext)
 		if !started {
 			c.log.Error(err, "timeout while waiting for cache sync")
 
