@@ -89,28 +89,13 @@ func NewSyncReconciler(name string, localMgr ctrl.Manager, rule *clusterregistry
 }
 
 func (r *syncReconciler) PreCheck(ctx context.Context) error {
-	attrs := []*authorizationv1.ResourceAttributes{
-		{
-			Verb:     "get",
+	for _, verb := range []string{"get", "list", "watch"} {
+		attr := &authorizationv1.ResourceAttributes{
+			Verb:     verb,
 			Group:    r.gvk.Group,
 			Version:  r.gvk.Version,
 			Resource: strings.ToLower(pluralize.NewClient().Plural(r.gvk.Kind)),
-		},
-		{
-			Verb:     "list",
-			Group:    r.gvk.Group,
-			Version:  r.gvk.Version,
-			Resource: strings.ToLower(pluralize.NewClient().Plural(r.gvk.Kind)),
-		},
-		{
-			Verb:     "watch",
-			Group:    r.gvk.Group,
-			Version:  r.gvk.Version,
-			Resource: strings.ToLower(pluralize.NewClient().Plural(r.gvk.Kind)),
-		},
-	}
-
-	for _, attr := range attrs {
+		}
 		selfSubjectAccessReview := authorizationv1.SelfSubjectAccessReview{
 			Spec: authorizationv1.SelfSubjectAccessReviewSpec{
 				ResourceAttributes: attr,
