@@ -5,11 +5,14 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"emperror.dev/errors"
+	pluralize "github.com/gertd/go-pluralize"
 	"github.com/go-logr/logr"
 	"github.com/throttled/throttled"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -83,6 +86,48 @@ func NewSyncReconciler(name string, localMgr ctrl.Manager, rule *clusterregistry
 	}
 
 	return r, nil
+}
+
+func (r *syncReconciler) PreCheck(ctx context.Context) error {
+	attrs := []*authorizationv1.ResourceAttributes{
+		{
+			Verb:     "get",
+			Group:    r.gvk.Group,
+			Version:  r.gvk.Version,
+			Resource: strings.ToLower(pluralize.NewClient().Plural(r.gvk.Kind)),
+		},
+		{
+			Verb:     "list",
+			Group:    r.gvk.Group,
+			Version:  r.gvk.Version,
+			Resource: strings.ToLower(pluralize.NewClient().Plural(r.gvk.Kind)),
+		},
+		{
+			Verb:     "watch",
+			Group:    r.gvk.Group,
+			Version:  r.gvk.Version,
+			Resource: strings.ToLower(pluralize.NewClient().Plural(r.gvk.Kind)),
+		},
+	}
+
+	for _, attr := range attrs {
+		selfSubjectAccessReview := authorizationv1.SelfSubjectAccessReview{
+			Spec: authorizationv1.SelfSubjectAccessReviewSpec{
+				ResourceAttributes: attr,
+			},
+		}
+
+		err := r.GetManager().GetClient().Create(ctx, &selfSubjectAccessReview)
+		if err != nil {
+			return errors.WrapIfWithDetails(err, "failed to create self subject access review", "attributes", attr)
+		}
+
+		if !selfSubjectAccessReview.Status.Allowed {
+			return errors.Errorf("do not have access to %s gvk: %s", attr.Verb, r.gvk)
+		}
+	}
+
+	return nil
 }
 
 func (r *syncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -256,6 +301,18 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 		return err
 	}
 
+	isObjectMatch := func(obj client.Object, gvk schema.GroupVersionKind) bool {
+		obj.GetObjectKind().SetGroupVersionKind(gvk)
+		ok, _, err := r.rule.Match(obj)
+		if err != nil {
+			r.GetLogger().Error(err, "could not match object")
+
+			return false
+		}
+
+		return ok
+	}
+
 	gvk := schema.GroupVersionKind(r.rule.Spec.GVK)
 	obj := r.initObjectFromGVK(gvk)
 
@@ -274,17 +331,37 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 				},
 			}
 		}),
-		predicate.NewPredicateFuncs(func(object client.Object) bool {
-			object.GetObjectKind().SetGroupVersionKind(gvk)
-			ok, _, err := r.rule.Match(object)
-			if err != nil {
-				r.GetLogger().Error(err, "could not match object")
+		predicate.Funcs{
+			CreateFunc: func(e event.CreateEvent) bool {
+				return isObjectMatch(e.Object, gvk)
+			},
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				oldRV := e.ObjectOld.GetResourceVersion()
+				e.ObjectOld.SetResourceVersion(e.ObjectNew.GetResourceVersion())
+				defer e.ObjectOld.SetResourceVersion(oldRV)
 
-				return false
-			}
+				options := []patch.CalculateOption{
+					reconciler.IgnoreManagedFields(),
+				}
 
-			return ok
-		}),
+				patchResult, err := patch.DefaultPatchMaker.Calculate(e.ObjectOld, e.ObjectNew, options...)
+				if err != nil {
+					return true
+				} else if patchResult.IsEmpty() {
+					return false
+				}
+
+				ok := isObjectMatch(e.ObjectNew, gvk)
+
+				return ok
+			},
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				return isObjectMatch(e.Object, gvk)
+			},
+			GenericFunc: func(e event.GenericEvent) bool {
+				return isObjectMatch(e.Object, gvk)
+			},
+		},
 	)
 	if err != nil {
 		return err
@@ -376,8 +453,12 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 			return nil, errors.NewWithDetails("could not find local cluster by id", "id", r.localClusterID)
 		}
 
+		syncedClusterID := types.UID(r.clusterID)
+		if clusterID, ok := current.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]; ok {
+			syncedClusterID = types.UID(clusterID)
+		}
 		var syncedCluster clusterregistryv1alpha1.Cluster
-		if syncedCluster, ok = clusters[types.UID(r.clusterID)]; !ok {
+		if syncedCluster, ok = clusters[syncedClusterID]; !ok {
 			return nil, errors.NewWithDetails("could not find synced cluster by id", "id", r.localClusterID)
 		}
 

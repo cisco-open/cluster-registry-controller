@@ -16,6 +16,7 @@ import (
 type ManagedReconciler interface {
 	reconcile.Reconciler
 
+	PreCheck(ctx context.Context) error
 	DoCleanup()
 	GetName() string
 	GetManager() ctrl.Manager
@@ -46,6 +47,10 @@ func NewManagedReconciler(name string, log logr.Logger) ManagedReconciler {
 		name: name,
 		log:  log,
 	}
+}
+
+func (r *ManagedReconcilerBase) PreCheck(ctx context.Context) error {
+	return nil
 }
 
 func (r *ManagedReconcilerBase) Start(ctx context.Context) error {
