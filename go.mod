@@ -5,9 +5,11 @@ go 1.17
 require (
 	emperror.dev/errors v0.8.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/banzaicloud/cluster-registry v0.0.4
+	github.com/banzaicloud/cluster-registry v0.0.6
 	github.com/banzaicloud/k8s-objectmatcher v1.5.1
 	github.com/banzaicloud/operator-tools v0.24.1-0.20210917222015-90c6c0b3cffe
+	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-logr/logr v0.4.0
 	github.com/go-logr/zapr v0.4.0 // indirect
 	github.com/gomodule/redigo v1.8.4 // indirect
@@ -33,14 +35,12 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/briandowns/spinner v1.12.0 // indirect
-	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/cppforlife/go-patch v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/evanphx/json-patch v4.11.0+incompatible // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/gertd/go-pluralize v0.1.7 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

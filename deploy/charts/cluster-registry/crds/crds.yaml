@@ -215,6 +215,8 @@ spec:
     kind: ResourceSyncRule
     listKind: ResourceSyncRuleList
     plural: resourcesyncrules
+    shortNames:
+    - rsr
     singular: resourcesyncrule
   scope: Cluster
   versions:
