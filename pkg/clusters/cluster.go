@@ -43,9 +43,11 @@ type Cluster struct {
 	livenessCheckInterval time.Duration
 	onAliveFuncs          []ClusterFunc
 	onDeadFuncs           []ClusterFunc
+	features              map[string]ClusterFeature
 
-	controllers ManagedControllers
-	mu          *sync.RWMutex
+	controllers        ManagedControllers
+	pendingControllers ManagedControllers
+	mu                 *sync.RWMutex
 }
 
 type (
@@ -102,9 +104,11 @@ func NewCluster(ctx context.Context, name string, k8sConfig *rest.Config, log lo
 		livenessCheckInterval: defaultLivenessCheckInterval,
 		onAliveFuncs:          make([]ClusterFunc, 0),
 		onDeadFuncs:           make([]ClusterFunc, 0),
+		features:              make(map[string]ClusterFeature),
 
-		controllers: make(ManagedControllers),
-		mu:          &sync.RWMutex{},
+		controllers:        make(ManagedControllers),
+		pendingControllers: make(ManagedControllers),
+		mu:                 &sync.RWMutex{},
 	}
 
 	c.ctx, c.ctxCancel = context.WithCancel(ctx)
@@ -146,6 +150,34 @@ func (c *Cluster) Start() error {
 	}(c.ctx, c, c.log.WithName("liveness"))
 
 	return nil
+}
+
+func (c *Cluster) AddFeature(feature ClusterFeature) {
+	c.mu.Lock()
+	c.features[feature.GetUID()] = feature
+	c.mu.Unlock()
+
+	// check pending controllers
+	for _, controller := range c.pendingControllers {
+		err := c.AddController(controller)
+		if err != nil {
+			c.log.Error(err, "could not add controller")
+		}
+	}
+}
+
+func (c *Cluster) RemoveFeature(uid string) {
+	c.mu.Lock()
+	delete(c.features, uid)
+	c.mu.Unlock()
+
+	// check controllers if they are still meet the feature requirements
+	for _, controller := range c.controllers {
+		if !c.checkRequiredClusterFeatures(controller) {
+			c.RemoveController(controller)
+			c.addPendingController(controller)
+		}
+	}
 }
 
 func (c *Cluster) AddOnAliveFunc(f ClusterFunc) {
@@ -220,11 +252,30 @@ func (c *Cluster) GetSecretID() *string {
 }
 
 func (c *Cluster) AddController(controller ManagedController) error {
+	if c.checkRequiredClusterFeatures(controller) {
+		return c.addController(controller)
+	}
+
+	c.addPendingController(controller)
+
+	return nil
+}
+
+func (c *Cluster) GetPendingControllers() ManagedControllers {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	return c.pendingControllers
+}
+
+func (c *Cluster) addController(controller ManagedController) error {
 	name := controller.GetName()
 
 	if c.GetController(name) != nil {
 		return nil
 	}
+
+	c.removePendingControllerByName(controller.GetName())
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -283,6 +334,8 @@ func (c *Cluster) RemoveController(controller ManagedController) {
 }
 
 func (c *Cluster) RemoveControllerByName(name string) {
+	c.removePendingControllerByName(name)
+
 	controller := c.GetController(name)
 
 	c.mu.Lock()
@@ -417,4 +470,35 @@ func (c *Cluster) runClusterFunc(f ClusterFunc) {
 	if err != nil {
 		c.log.Error(err, "could not run onAlive function")
 	}
+}
+
+func (c *Cluster) addPendingController(controller ManagedController) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.pendingControllers[controller.GetName()] = controller
+}
+
+func (c *Cluster) removePendingControllerByName(name string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	delete(c.pendingControllers, name)
+}
+
+func (c *Cluster) checkRequiredClusterFeatures(controller ManagedController) bool {
+	var requiredFeatures []ClusterFeatureRequirement
+
+	if requiredFeatures = controller.GetRequiredClusterFeatures(); len(requiredFeatures) == 0 {
+		return true
+	}
+
+	for _, rf := range requiredFeatures {
+		ok := rf.Match(c.features)
+		if !ok {
+			return false
+		}
+	}
+
+	return true
 }

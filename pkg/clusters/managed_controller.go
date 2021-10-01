@@ -19,6 +19,7 @@ type ManagedController interface {
 	Stop()
 	Stopped() <-chan struct{}
 	Start(ctx context.Context, mgr ctrl.Manager) error
+	GetRequiredClusterFeatures() []ClusterFeatureRequirement
 }
 
 type ManagedControllers map[string]ManagedController
@@ -31,14 +32,38 @@ type managedController struct {
 	ctrl              controller.Controller
 	ctrlContext       context.Context
 	ctrlContextCancel context.CancelFunc
+
+	requiredClusterFeatures []ClusterFeatureRequirement
 }
 
-func NewManagedController(name string, r ManagedReconciler, l logr.Logger) ManagedController {
-	return &managedController{
-		name:       name,
-		reconciler: r,
-		log:        l.WithName(name),
+type ManagedControllerOption func(*managedController)
+
+func WithRequiredClusterFeatures(features ...ClusterFeatureRequirement) ManagedControllerOption {
+	return func(r *managedController) {
+		if r.requiredClusterFeatures == nil {
+			r.requiredClusterFeatures = make([]ClusterFeatureRequirement, 0)
+		}
+		r.requiredClusterFeatures = append(r.requiredClusterFeatures, features...)
 	}
+}
+
+func NewManagedController(name string, r ManagedReconciler, l logr.Logger, options ...ManagedControllerOption) ManagedController {
+	m := &managedController{
+		name:                    name,
+		reconciler:              r,
+		log:                     l.WithName(name),
+		requiredClusterFeatures: make([]ClusterFeatureRequirement, 0),
+	}
+
+	for _, o := range options {
+		o(m)
+	}
+
+	return m
+}
+
+func (c *managedController) GetRequiredClusterFeatures() []ClusterFeatureRequirement {
+	return c.requiredClusterFeatures
 }
 
 func (c *managedController) GetName() string {
@@ -61,6 +86,7 @@ func (c *managedController) Stop() {
 	if c.ctrlContextCancel != nil {
 		c.ctrlContextCancel()
 	}
+	c.ctrlContextCancel = nil
 }
 
 func (c *managedController) Start(ctx context.Context, mgr ctrl.Manager) error {
