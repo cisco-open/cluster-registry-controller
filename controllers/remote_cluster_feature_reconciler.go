@@ -37,7 +37,7 @@ func (r *ClusterFeatureReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log := r.GetLogger().WithValues("clusterFeature", req.NamespacedName, "cluster", r.cluster.GetName())
 
 	feature := &clusterregistryv1alpha1.ClusterFeature{}
-	err := r.GetManager().GetClient().Get(ctx, req.NamespacedName, feature)
+	err := r.GetClient().Get(ctx, req.NamespacedName, feature)
 	if apierrors.IsNotFound(err) {
 		log.Info("delete feature")
 		r.cluster.RemoveFeature(req.NamespacedName.String())

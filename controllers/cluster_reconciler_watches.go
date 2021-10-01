@@ -30,7 +30,7 @@ func (r *ClusterReconciler) watchLocalClustersForConflict(ctx context.Context, b
 		}},
 		handler.EnqueueRequestsFromMapFunc(func(object client.Object) []ctrl.Request {
 			reqs := make([]reconcile.Request, 0)
-			clusters, err := GetClusters(ctx, r.GetManager().GetClient())
+			clusters, err := GetClusters(ctx, r.GetClient())
 			if err != nil {
 				r.GetLogger().Error(err, "")
 
@@ -71,7 +71,7 @@ func (r *ClusterReconciler) watchClusterRegistrySecrets(ctx context.Context, b *
 				if secret.Type != clusterregistryv1alpha1.SecretTypeClusterRegistry {
 					return nil
 				}
-				clusters, err := GetClusters(ctx, r.GetManager().GetClient())
+				clusters, err := GetClusters(ctx, r.GetClient())
 				if err != nil {
 					r.GetLogger().Error(err, "")
 
