@@ -5,7 +5,7 @@ go 1.17
 require (
 	emperror.dev/errors v0.8.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/banzaicloud/cluster-registry v0.0.6
+	github.com/banzaicloud/cluster-registry v0.0.7
 	github.com/banzaicloud/k8s-objectmatcher v1.5.1
 	github.com/banzaicloud/operator-tools v0.24.1-0.20210917222015-90c6c0b3cffe
 	github.com/cenkalti/backoff v2.2.1+incompatible

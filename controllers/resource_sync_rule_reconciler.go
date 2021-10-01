@@ -201,12 +201,21 @@ func InitNewResourceSyncController(rule *clusterregistryv1alpha1.ResourceSyncRul
 		return nil, errors.WrapIf(err, "could not create rate limiter")
 	}
 
+	requiredClusterFeatures := make([]clusters.ClusterFeatureRequirement, 0)
+	for _, m := range rule.Spec.ClusterFeatureMatches {
+		requiredClusterFeatures = append(requiredClusterFeatures, clusters.ClusterFeatureRequirement{
+			Name:             m.FeatureName,
+			MatchLabels:      m.MatchLabels,
+			MatchExpressions: m.MatchExpressions,
+		})
+	}
+
 	log = log.WithName(rule.Name)
 	srec, err := NewSyncReconciler(rule.Name, mgr, rule, log, cluster.GetClusterID(), clustersManager, WithRateLimiter(rl))
 	if err != nil {
 		return nil, errors.WithStackIf(err)
 	}
-	ctrl := clusters.NewManagedController(rule.Name, srec, log)
+	ctrl := clusters.NewManagedController(rule.Name, srec, log, clusters.WithRequiredClusterFeatures(requiredClusterFeatures...))
 
 	return ctrl, cluster.AddController(ctrl)
 }
