@@ -46,12 +46,11 @@ type ClusterFeatureRequirement struct {
 }
 
 func (r ClusterFeatureRequirement) Match(features map[string]ClusterFeature) bool {
-	var ok bool
 	for _, feature := range features {
-		ok = false
 		if r.Name != "" && r.Name != feature.GetName() {
 			continue
 		}
+
 		if len(r.MatchLabels) == 0 && len(r.MatchExpressions) == 0 {
 			return true
 		}
@@ -64,11 +63,9 @@ func (r ClusterFeatureRequirement) Match(features map[string]ClusterFeature) boo
 			return false
 		}
 		if matcher.Matches(labels.Set(feature.GetLabels())) {
-			ok = true
-
-			break
+			return true
 		}
 	}
 
-	return ok
+	return false
 }
