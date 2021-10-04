@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -16,17 +17,19 @@ import (
 type ManagedReconciler interface {
 	reconcile.Reconciler
 
-	PreCheck(ctx context.Context) error
+	PreCheck(ctx context.Context, client client.Client) error
 	DoCleanup()
 	GetName() string
 	GetManager() ctrl.Manager
+	SetManager(mgr ctrl.Manager)
 	GetRecorder() record.EventRecorder
 	GetContext() context.Context
 	SetContext(ctx context.Context)
 	GetLogger() logr.Logger
 	SetLogger(l logr.Logger)
+	GetClient() client.Client
+	SetClient(client client.Client)
 	Start(ctx context.Context) error
-	SetManager(mgr ctrl.Manager)
 	SetScheme(scheme *runtime.Scheme)
 	SetupWithController(ctx context.Context, ctrl controller.Controller) error
 	SetupWithManager(ctx context.Context, mgr ctrl.Manager) error
@@ -40,6 +43,7 @@ type ManagedReconcilerBase struct {
 	mgr      ctrl.Manager
 	recorder record.EventRecorder
 	scheme   *runtime.Scheme
+	client   client.Client
 }
 
 func NewManagedReconciler(name string, log logr.Logger) ManagedReconciler {
@@ -49,7 +53,15 @@ func NewManagedReconciler(name string, log logr.Logger) ManagedReconciler {
 	}
 }
 
-func (r *ManagedReconcilerBase) PreCheck(ctx context.Context) error {
+func (r *ManagedReconcilerBase) GetClient() client.Client {
+	return r.client
+}
+
+func (r *ManagedReconcilerBase) SetClient(client client.Client) {
+	r.client = client
+}
+
+func (r *ManagedReconcilerBase) PreCheck(ctx context.Context, client client.Client) error {
 	return nil
 }
 

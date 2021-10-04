@@ -73,7 +73,7 @@ func (r *ResourceSyncRuleReconciler) reconcile(ctx context.Context, req ctrl.Req
 	log.Info("reconciling")
 
 	sr := &clusterregistryv1alpha1.ResourceSyncRule{}
-	err := r.GetManager().GetClient().Get(ctx, req.NamespacedName, sr)
+	err := r.GetClient().Get(ctx, req.NamespacedName, sr)
 	if apierrors.IsNotFound(err) {
 		for _, cluster := range r.clustersManager.GetAll() {
 			cluster.RemoveControllerByName(req.NamespacedName.Name)
@@ -145,7 +145,7 @@ func (r *ResourceSyncRuleReconciler) SetupWithController(ctx context.Context, ct
 	r.clustersManager.AddOnAfterAddFunc(func(c *clusters.Cluster) {
 		if r.queue != nil {
 			rules := &clusterregistryv1alpha1.ResourceSyncRuleList{}
-			err := r.GetManager().GetClient().List(ctx, rules)
+			err := r.GetClient().List(ctx, rules)
 			if err != nil {
 				r.GetLogger().Error(err, "could not list resource sync rules")
 			}
@@ -188,6 +188,8 @@ func (r *ResourceSyncRuleReconciler) SetupWithManager(ctx context.Context, mgr c
 	if err != nil {
 		return err
 	}
+
+	r.SetClient(mgr.GetClient())
 
 	return nil
 }

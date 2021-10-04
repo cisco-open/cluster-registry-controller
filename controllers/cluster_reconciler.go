@@ -63,7 +63,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	log.Info("reconciling")
 
 	cluster := &clusterregistryv1alpha1.Cluster{}
-	err = r.GetManager().GetClient().Get(ctx, req.NamespacedName, cluster)
+	err = r.GetClient().Get(ctx, req.NamespacedName, cluster)
 	if apierrors.IsNotFound(err) {
 		removeErr := r.removeRemoteCluster(req.NamespacedName.Name)
 		if removeErr != nil && !errors.Is(errors.Cause(removeErr), clusters.ErrClusterNotFound) {
@@ -111,7 +111,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		cluster.Status = cluster.Status.Reset()
 		cluster.Status.State = clusterregistryv1alpha1.ClusterStateDisabled
 		currentConditions = ClusterConditionsMap{}
-		err = UpdateCluster(ctx, reconcileError, r.GetManager().GetClient(), cluster, currentConditions, log)
+		err = UpdateCluster(ctx, reconcileError, r.GetClient(), cluster, currentConditions, log)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -127,7 +127,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if isClusterLocal || reconcileError != nil {
 		// status needs to be updated if the cluster is local or if there was any error setting up a remote cluster instance
-		err = UpdateCluster(ctx, reconcileError, r.GetManager().GetClient(), cluster, currentConditions, log)
+		err = UpdateCluster(ctx, reconcileError, r.GetClient(), cluster, currentConditions, log)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -140,9 +140,9 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}, nil
 }
 
-func (r *ClusterReconciler) getK8SConfigForCluster(namespace string, name string) ([]byte, error) {
+func (r *ClusterReconciler) getK8SConfigForCluster(ctx context.Context, namespace string, name string) ([]byte, error) {
 	var secret corev1.Secret
-	err := r.GetManager().GetClient().Get(context.TODO(), client.ObjectKey{
+	err := r.GetClient().Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
 	}, &secret)
@@ -178,7 +178,7 @@ func (r *ClusterReconciler) getRemoteCluster(ctx context.Context, cluster *clust
 		}
 	}
 
-	k8sconfig, err := r.getK8SConfigForCluster(cluster.Spec.AuthInfo.SecretRef.Namespace, cluster.Spec.AuthInfo.SecretRef.Name)
+	k8sconfig, err := r.getK8SConfigForCluster(ctx, cluster.Spec.AuthInfo.SecretRef.Namespace, cluster.Spec.AuthInfo.SecretRef.Name)
 	if err != nil {
 		cluster.Status.State = clusterregistryv1alpha1.ClusterStateInvalidAuthInfo
 
@@ -279,7 +279,7 @@ func (r *ClusterReconciler) reconcileLocalCluster(ctx context.Context, cluster *
 		return errors.WithStackIf(err)
 	}
 
-	clusterMetadata, err := clustermeta.GetClusterMetadata(ctx, r.GetManager().GetClient())
+	clusterMetadata, err := clustermeta.GetClusterMetadata(ctx, r.GetClient())
 	SetCondition(cluster, currentConditions, ClusterMetadataCondition(err), r.GetRecorder())
 	if err != nil {
 		return errors.WithStackIf(err)
@@ -303,7 +303,7 @@ func (r *ClusterReconciler) provisionLocalClusterReaderSecret(ctx context.Contex
 		return nil
 	}
 
-	secret, err := util.GetReaderSecretForCluster(ctx, r.GetManager().GetClient(), r.GetManager().GetConfig(), cluster, types.NamespacedName{
+	secret, err := util.GetReaderSecretForCluster(ctx, r.GetClient(), r.GetManager().GetConfig(), cluster, types.NamespacedName{
 		Name:      r.config.ReaderServiceAccountName,
 		Namespace: r.config.Namespace,
 	}, r.config.APIServerEndpointAddress)
@@ -311,7 +311,7 @@ func (r *ClusterReconciler) provisionLocalClusterReaderSecret(ctx context.Contex
 		return errors.WithStackIf(err)
 	}
 
-	rec := reconciler.NewReconcilerWith(r.GetManager().GetClient(),
+	rec := reconciler.NewReconcilerWith(r.GetClient(),
 		reconciler.WithLog(r.GetLogger()),
 		reconciler.WithRecreateImmediately(),
 		reconciler.WithEnableRecreateWorkload(),
@@ -324,7 +324,7 @@ func (r *ClusterReconciler) provisionLocalClusterReaderSecret(ctx context.Contex
 
 func (r *ClusterReconciler) checkLocalClusterConflict(ctx context.Context, cluster *clusterregistryv1alpha1.Cluster, currentConditions ClusterConditionsMap) error {
 	clusters := &clusterregistryv1alpha1.ClusterList{}
-	err := r.GetManager().GetClient().List(ctx, clusters)
+	err := r.GetClient().List(ctx, clusters)
 	if err != nil {
 		return errors.WrapIf(err, "could not list objects")
 	}
@@ -361,7 +361,7 @@ func (r *ClusterReconciler) triggerClusterReconcile(cluster *clusterregistryv1al
 
 func (r *ClusterReconciler) triggerLocalClusterReconciles(ctx context.Context) error {
 	clusters := &clusterregistryv1alpha1.ClusterList{}
-	err := r.GetManager().GetClient().List(ctx, clusters)
+	err := r.GetClient().List(ctx, clusters)
 	if err != nil {
 		return err
 	}
@@ -378,7 +378,7 @@ func (r *ClusterReconciler) triggerLocalClusterReconciles(ctx context.Context) e
 
 func (r *ClusterReconciler) setClusterID(ctx context.Context) error {
 	if r.clusterID == "" {
-		clusterID, err := GetClusterID(ctx, r.GetManager().GetClient())
+		clusterID, err := GetClusterID(ctx, r.GetClient())
 		if err != nil {
 			return errors.WrapIf(err, "could not get cluster id")
 		}
@@ -443,6 +443,8 @@ func (r *ClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manag
 	if err != nil {
 		return err
 	}
+
+	r.SetClient(mgr.GetClient())
 
 	return nil
 }

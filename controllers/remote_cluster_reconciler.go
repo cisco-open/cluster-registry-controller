@@ -87,7 +87,7 @@ func (r *RemoteClusterReconciler) reconcile(ctx context.Context, cluster *cluste
 		return WrapAsPermanentError(errors.WithDetails(ErrInvalidClusterID, "nsUID", r.clusterID, "clusterUID", cluster.UID))
 	}
 
-	clusterMetadata, err := clustermeta.GetClusterMetadata(ctx, r.GetManager().GetClient())
+	clusterMetadata, err := clustermeta.GetClusterMetadata(ctx, r.GetClient())
 	SetCondition(cluster, currentConditions, ClusterMetadataCondition(err), r.localRecorder)
 	if err != nil {
 		err = errors.WithStackIf(err)
@@ -105,7 +105,7 @@ func (r *RemoteClusterReconciler) reconcile(ctx context.Context, cluster *cluste
 
 func (r *RemoteClusterReconciler) setClusterID(ctx context.Context) error {
 	if r.clusterID == "" {
-		clusterID, err := GetClusterID(ctx, r.GetManager().GetClient())
+		clusterID, err := GetClusterID(ctx, r.GetClient())
 		if err != nil {
 			return errors.WrapIf(err, "could not get cluster id")
 		}
@@ -121,7 +121,7 @@ func (r *RemoteClusterReconciler) syncClusters(ctx context.Context) error {
 		return errors.WrapIf(err, "could not get local clusters")
 	}
 
-	remoteClusters, err := GetClusters(ctx, r.GetManager().GetClient())
+	remoteClusters, err := GetClusters(ctx, r.GetClient())
 	if err != nil {
 		return errors.WrapIf(err, "could not get remote clusters")
 	}

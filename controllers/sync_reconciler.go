@@ -88,7 +88,7 @@ func NewSyncReconciler(name string, localMgr ctrl.Manager, rule *clusterregistry
 	return r, nil
 }
 
-func (r *syncReconciler) PreCheck(ctx context.Context) error {
+func (r *syncReconciler) PreCheck(ctx context.Context, client client.Client) error {
 	for _, verb := range []string{"get", "list", "watch"} {
 		attr := &authorizationv1.ResourceAttributes{
 			Verb:     verb,
@@ -102,7 +102,7 @@ func (r *syncReconciler) PreCheck(ctx context.Context) error {
 			},
 		}
 
-		err := r.GetManager().GetClient().Create(ctx, &selfSubjectAccessReview)
+		err := client.Create(ctx, &selfSubjectAccessReview)
 		if err != nil {
 			return errors.WrapIfWithDetails(err, "failed to create self subject access review", "attributes", attr)
 		}
@@ -166,7 +166,7 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
-	err := r.GetManager().GetClient().Get(ctx, req.NamespacedName, obj)
+	err := r.GetClient().Get(ctx, req.NamespacedName, obj)
 	if apierrors.IsNotFound(err) {
 		return ctrl.Result{}, r.deleteResource(ctx, obj, log)
 	}
