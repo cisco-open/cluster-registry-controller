@@ -40,6 +40,10 @@ import (
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/util"
 )
 
+const (
+	originalNameLabel = "cluster-registry.k8s.cisco.com/original-name"
+)
+
 type syncReconciler struct {
 	clusters.ManagedReconciler
 
@@ -56,6 +60,8 @@ type syncReconciler struct {
 	queue          workqueue.RateLimitingInterface
 	rule           *clusterregistryv1alpha1.ResourceSyncRule
 	localInformers map[string]struct{}
+
+	resourceNameMutated bool
 }
 
 type SyncReconcilerOption func(r *syncReconciler)
@@ -167,7 +173,7 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	err := r.GetClient().Get(ctx, req.NamespacedName, obj)
-	if apierrors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) || err == nil && !obj.GetDeletionTimestamp().IsZero() {
 		return ctrl.Result{}, r.deleteResource(ctx, obj, log)
 	}
 	if err != nil {
@@ -410,6 +416,10 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 		objAnnotations[clusterregistryv1alpha1.OwnershipAnnotation] = r.clusterID
 	}
 
+	if objLabels[clusterregistryv1alpha1.OwnershipAnnotation] == "" {
+		objLabels[clusterregistryv1alpha1.OwnershipAnnotation] = r.clusterID
+	}
+
 	if mutated, gvk := matchedRules.GetMutatedGVK(obj.GetObjectKind().GroupVersionKind()); mutated {
 		objAnnotations[clusterregistryv1alpha1.OriginalGVKAnnotation] = util.GVKToString(obj.GetObjectKind().GroupVersionKind())
 		obj.GetObjectKind().SetGroupVersionKind(gvk)
@@ -418,6 +428,7 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 	delete(objAnnotations, patch.LastAppliedConfig)
 	delete(objAnnotations, corev1.LastAppliedConfigAnnotation)
 	obj.SetAnnotations(objAnnotations)
+	obj.SetLabels(objLabels)
 
 	obj.SetGeneration(0)
 	obj.SetResourceVersion("")
@@ -477,12 +488,45 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 	}
 
 	if current.GetName() != obj.GetName() {
-		objAnnotations := obj.GetAnnotations()
-		objAnnotations["cluster-registry.k8s.cisco.com/original-name"] = current.GetName()
-		obj.SetAnnotations(objAnnotations)
+		objLabels := obj.GetLabels()
+		if objLabels == nil {
+			objLabels = make(map[string]string)
+		}
+		objLabels[originalNameLabel] = current.GetName()
+		obj.SetLabels(objLabels)
+		r.resourceNameMutated = true
 	}
 
 	return obj, nil
+}
+
+func (r *syncReconciler) getObjectByOriginalName(ctx context.Context, obj client.Object, gvk schema.GroupVersionKind) (bool, client.Object, error) {
+	var err error
+
+	objects := &unstructured.UnstructuredList{}
+	objects.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   gvk.Group,
+		Kind:    fmt.Sprintf("%sList", gvk.Kind),
+		Version: gvk.Version,
+	})
+
+	err = r.localMgr.GetClient().List(ctx, objects, client.InNamespace(obj.GetNamespace()), client.MatchingLabels(map[string]string{
+		originalNameLabel: obj.GetName(),
+		clusterregistryv1alpha1.OwnershipAnnotation: r.clusterID,
+	}))
+	if err != nil {
+		return false, nil, err
+	}
+
+	if len(objects.Items) > 1 {
+		return false, nil, errors.New("multiple renamed objects were found")
+	}
+
+	if len(objects.Items) == 1 {
+		return true, objects.Items[0].DeepCopy(), nil
+	}
+
+	return false, nil, nil
 }
 
 func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, log logr.Logger) error {
@@ -492,7 +536,11 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, 
 		return errors.New("invalid object")
 	}
 
-	object.GetObjectKind().SetGroupVersionKind(r.localGVK)
+	isGVKMutated := r.gvk != r.localGVK
+	if isGVKMutated {
+		object.GetObjectKind().SetGroupVersionKind(r.localGVK)
+	}
+
 	if current, ok = object.DeepCopyObject().(client.Object); !ok {
 		return errors.New("invalid object")
 	}
@@ -501,28 +549,41 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, 
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 	}, current)
-	if apierrors.IsNotFound(err) { // already deleted
-		return nil
-	}
-	if err != nil {
+	if apierrors.IsNotFound(err) { // nolint:nestif
+		if !r.resourceNameMutated { // already deleted
+			return nil
+		}
+		if ok, obj, err := r.getObjectByOriginalName(ctx, obj, current.GetObjectKind().GroupVersionKind()); err != nil {
+			return err
+		} else if ok {
+			current = obj
+		} else {
+			return nil
+		}
+	} else if err != nil {
 		return err
 	}
+
+	log = log.WithValues("resource", types.NamespacedName{
+		Name:      current.GetName(),
+		Namespace: current.GetNamespace(),
+	})
 
 	ownerClusterID := current.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
 
 	if ownerClusterID == "" {
-		log.Info("deletion is skipped, object is owned by this cluster")
+		log.V(1).Info("deletion is skipped, object is owned by this cluster")
 
 		return nil
 	}
 
 	if r.isOwnedByAnotherAliveCluster(ownerClusterID) {
-		log.Info("deletion is skipped, owned by another live cluster")
+		log.V(1).Info("deletion is skipped, owned by another live cluster")
 
 		return nil
 	}
 
-	err = r.localMgr.GetClient().Delete(ctx, obj)
+	err = r.localMgr.GetClient().Delete(ctx, current)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
@@ -623,7 +684,7 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj client.Objec
 		Informer: localInformer,
 	}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 		name := obj.GetName()
-		if originalName, ok := obj.GetAnnotations()["cluster-registry.k8s.cisco.com/original-name"]; ok {
+		if originalName, ok := obj.GetLabels()[originalNameLabel]; ok {
 			name = originalName
 		}
 
