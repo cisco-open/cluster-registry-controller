@@ -205,7 +205,7 @@ func (c *managedController) getInjectFunc() inject.Func {
 			if ok, err := inject.CacheInto(c.cache, i); err != nil {
 				return err
 			} else if ok {
-				c.log.Info("cache injected", "i", i)
+				c.log.V(2).Info("cache injected", "i", i)
 
 				return nil
 			}
@@ -217,15 +217,13 @@ func (c *managedController) getInjectFunc() inject.Func {
 			if ok, err := inject.ClientInto(c.client, i); err != nil {
 				return err
 			} else if ok {
-				c.log.Info("client injected", "i", i)
+				c.log.V(2).Info("client injected", "i", i)
 
 				return nil
 			}
 
 			return nil
 		}
-
-		c.log.Info("called parent SetFields", "i", i)
 
 		return c.mgr.SetFields(i)
 	}

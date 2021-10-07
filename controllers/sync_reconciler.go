@@ -21,9 +21,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -60,6 +62,9 @@ type syncReconciler struct {
 	queue          workqueue.RateLimitingInterface
 	rule           *clusterregistryv1alpha1.ResourceSyncRule
 	localInformers map[string]struct{}
+
+	localClient client.Client
+	localCache  cache.Cache
 
 	resourceNameMutated bool
 }
@@ -134,7 +139,7 @@ func (r *syncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 func (r *syncReconciler) initObjectFromGVK(gvk schema.GroupVersionKind) client.Object {
 	var object client.Object
-	obj, err := r.localMgr.GetClient().Scheme().New(gvk)
+	obj, err := r.localClient.Scheme().New(gvk)
 	if err != nil {
 		object = &unstructured.Unstructured{}
 		object.GetObjectKind().SetGroupVersionKind(gvk)
@@ -154,7 +159,7 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// check namespace existence
 	if req.Namespace != "" {
-		err := r.localMgr.GetClient().Get(ctx, types.NamespacedName{
+		err := r.localClient.Get(ctx, types.NamespacedName{
 			Name: req.Namespace,
 		}, &corev1.Namespace{})
 		if err != nil && !apierrors.IsNotFound(err) {
@@ -212,11 +217,11 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	rec := reconciler.NewGenericReconciler(
-		r.localMgr.GetClient(),
+		r.localClient,
 		log,
 		reconciler.ReconcilerOpts{
 			EnableRecreateWorkloadOnImmutableFieldChange: true,
-			Scheme: r.localMgr.GetScheme(),
+			Scheme: r.localClient.Scheme(),
 		},
 	)
 
@@ -238,7 +243,7 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 	log.Info("object reconciled")
 
-	err = r.localMgr.GetClient().Get(ctx, client.ObjectKey{
+	err = r.localClient.Get(ctx, client.ObjectKey{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 	}, obj)
@@ -251,7 +256,7 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if matchedRules.GetMutationSyncStatus() {
 		desiredObject.SetResourceVersion(obj.GetResourceVersion())
-		err = r.localMgr.GetClient().Status().Update(ctx, desiredObject)
+		err = r.localClient.Status().Update(ctx, desiredObject)
 		if err != nil {
 			return ctrl.Result{}, errors.WrapIf(err, "could not update object status")
 		}
@@ -267,7 +272,7 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *syncReconciler) Start(ctx context.Context) error {
 	// set local cluster id
 	if r.localClusterID == "" {
-		localClusterID, err := GetClusterID(ctx, r.localMgr.GetClient())
+		localClusterID, err := GetClusterID(ctx, r.localClient)
 		if err != nil {
 			return errors.WrapIf(err, "could not get local cluster id")
 		}
@@ -291,6 +296,18 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 	if err != nil {
 		return err
 	}
+
+	localCache, err := r.createAndStartCache()
+	if err != nil {
+		return err
+	}
+	r.localCache = localCache
+
+	localClient, err := r.createClient(r.localMgr.GetConfig(), localCache)
+	if err != nil {
+		return err
+	}
+	r.localClient = localClient
 
 	isObjectMatch := func(obj client.Object, gvk schema.GroupVersionKind) bool {
 		obj.GetObjectKind().SetGroupVersionKind(gvk)
@@ -375,7 +392,7 @@ func (r *syncReconciler) GetRule() *clusterregistryv1alpha1.ResourceSyncRule {
 }
 
 func (r *syncReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	return r.ManagedReconciler.SetupWithManager(ctx, mgr)
+	return errors.New("not implemented")
 }
 
 func (r *syncReconciler) mutateObject(current client.Object, matchedRules clusterregistryv1alpha1.MatchedRules) (client.Object, error) {
@@ -439,7 +456,7 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 	obj.SetOwnerReferences(nil)
 
 	if patches := matchedRules.GetMutationOverrides(); len(patches) > 0 { // nolint:nestif
-		clusters, err := GetClusters(r.GetContext(), r.localMgr.GetClient())
+		clusters, err := GetClusters(r.GetContext(), r.localClient)
 		if err != nil {
 			return nil, errors.WrapIf(err, "could not get clusters")
 		}
@@ -472,7 +489,7 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 		patchFunc, err := resources.PatchYAMLModifier(resources.K8SResourceOverlay{
 			GVK:     &gvk,
 			Patches: patches,
-		}, resources.NewObjectParser(r.localMgr.GetScheme()))
+		}, resources.NewObjectParser(r.localClient.Scheme()))
 		if err != nil {
 			return nil, errors.WrapIf(err, "could not get patch func for object")
 		}
@@ -510,7 +527,7 @@ func (r *syncReconciler) getObjectByOriginalName(ctx context.Context, obj client
 		Version: gvk.Version,
 	})
 
-	err = r.localMgr.GetClient().List(ctx, objects, client.InNamespace(obj.GetNamespace()), client.MatchingLabels(map[string]string{
+	err = r.localClient.List(ctx, objects, client.InNamespace(obj.GetNamespace()), client.MatchingLabels(map[string]string{
 		originalNameLabel: obj.GetName(),
 		clusterregistryv1alpha1.OwnershipAnnotation: r.clusterID,
 	}))
@@ -545,7 +562,7 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, 
 		return errors.New("invalid object")
 	}
 
-	err := r.localMgr.GetClient().Get(ctx, types.NamespacedName{
+	err := r.localClient.Get(ctx, types.NamespacedName{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 	}, current)
@@ -583,7 +600,7 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, 
 		return nil
 	}
 
-	err = r.localMgr.GetClient().Delete(ctx, current)
+	err = r.localClient.Delete(ctx, current)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
@@ -675,7 +692,7 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj client.Objec
 
 	r.GetLogger().Info("init local informer", "gvk", key)
 
-	localInformer, err := r.localMgr.GetCache().GetInformer(ctx, obj)
+	localInformer, err := r.localCache.GetInformer(ctx, obj)
 	if err != nil {
 		return errors.WrapIf(err, "could not create local informer for clusters")
 	}
@@ -727,4 +744,49 @@ func (r *syncReconciler) localPredicate() predicate.Funcs {
 			return false
 		},
 	}
+}
+
+func (r *syncReconciler) createClient(config *rest.Config, cache cache.Cache) (client.Client, error) {
+	cli, err := client.New(config, client.Options{
+		Scheme: r.localMgr.GetScheme(),
+		Mapper: r.localMgr.GetRESTMapper(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	cli, err = client.NewDelegatingClient(client.NewDelegatingClientInput{
+		CacheReader:     cache,
+		Client:          cli,
+		UncachedObjects: nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return cli, nil
+}
+
+func (r *syncReconciler) createAndStartCache() (cache.Cache, error) {
+	cche, err := cache.New(r.localMgr.GetConfig(), cache.Options{
+		Scheme: r.localMgr.GetScheme(),
+		Mapper: r.localMgr.GetRESTMapper(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		err = cche.Start(r.GetContext())
+		if err != nil {
+			r.GetLogger().Error(err, "could not start cache")
+		}
+		r.GetLogger().Info("cache stopped")
+	}()
+
+	if !cche.WaitForCacheSync(r.GetContext()) {
+		return nil, errors.New("could not sync cache")
+	}
+
+	return cche, nil
 }
