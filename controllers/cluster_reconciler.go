@@ -190,7 +190,11 @@ func (r *ClusterReconciler) getRemoteCluster(ctx context.Context, cluster *clust
 		return nil, errors.WrapIf(err, "could not load kubeconfig")
 	}
 
-	rest, err := clientcmd.NewDefaultClientConfig(*clusterConfig, util.GetKubeconfigOverridesForClusterByNetwork(cluster, r.config.NetworkName)).ClientConfig()
+	kubeConfigOverrides, err := util.GetKubeconfigOverridesForClusterByNetwork(cluster, r.config.NetworkName)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	rest, err := clientcmd.NewDefaultClientConfig(*clusterConfig, kubeConfigOverrides).ClientConfig()
 	if err != nil {
 		return nil, errors.WrapIf(err, "could not create k8s rest config")
 	}

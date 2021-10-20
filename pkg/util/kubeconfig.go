@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"emperror.dev/errors"
 	"k8s.io/client-go/tools/clientcmd"
 	k8sclientapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/yaml"
@@ -14,15 +15,9 @@ import (
 )
 
 func GetKubeconfigWithSAToken(name, username, endpointURL string, caData []byte, saToken string) (string, error) {
-	if !strings.Contains(endpointURL, "//") {
-		endpointURL = "//" + endpointURL
-	}
-	u, err := url.Parse(endpointURL)
+	address, err := getURLWithHTTPSScheme(endpointURL)
 	if err != nil {
-		return "", err
-	}
-	if u.Scheme == "" {
-		u.Scheme = "https"
+		return "", errors.WithStack(err)
 	}
 
 	config := k8sclientapiv1.Config{
@@ -33,7 +28,7 @@ func GetKubeconfigWithSAToken(name, username, endpointURL string, caData []byte,
 				Name: name,
 				Cluster: k8sclientapiv1.Cluster{
 					CertificateAuthorityData: caData,
-					Server:                   u.String(),
+					Server:                   address,
 				},
 			},
 		},
@@ -83,25 +78,41 @@ func GetEndpointForClusterByNetwork(cluster *clusterregistryv1alpha1.Cluster, ne
 	return endpoint
 }
 
-func GetKubeconfigOverridesForClusterByNetwork(cluster *clusterregistryv1alpha1.Cluster, networkName string) *clientcmd.ConfigOverrides {
+func GetKubeconfigOverridesForClusterByNetwork(cluster *clusterregistryv1alpha1.Cluster, networkName string) (*clientcmd.ConfigOverrides, error) {
 	overrides := &clientcmd.ConfigOverrides{}
 
 	if len(cluster.Spec.KubernetesAPIEndpoints) == 0 {
-		return overrides
+		return overrides, nil
 	}
 
 	endpoint := GetEndpointForClusterByNetwork(cluster, networkName)
 
 	if endpoint.ServerAddress != "" {
-		overrides.ClusterInfo.Server = (&url.URL{
-			Scheme: "https",
-			Host:   endpoint.ServerAddress,
-		}).String()
+		address, err := getURLWithHTTPSScheme(endpoint.ServerAddress)
+		if err != nil {
+			return overrides, errors.WithStack(err)
+		}
+		overrides.ClusterInfo.Server = address
 	}
 
 	if len(endpoint.CABundle) > 0 {
 		overrides.ClusterInfo.CertificateAuthorityData = endpoint.CABundle
 	}
 
-	return overrides
+	return overrides, nil
+}
+
+func getURLWithHTTPSScheme(address string) (string, error) {
+	if !strings.Contains(address, "//") {
+		address = "//" + address
+	}
+	u, err := url.Parse(address)
+	if err != nil {
+		return "", err
+	}
+	if u.Scheme == "" {
+		u.Scheme = "https"
+	}
+
+	return u.String(), nil
 }
