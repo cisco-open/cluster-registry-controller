@@ -454,6 +454,7 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 	obj.SetCreationTimestamp(metav1.Time{})
 	obj.SetFinalizers(nil)
 	obj.SetOwnerReferences(nil)
+	obj.SetManagedFields(nil)
 
 	if patches := matchedRules.GetMutationOverrides(); len(patches) > 0 { // nolint:nestif
 		clusters, err := GetClusters(r.GetContext(), r.localClient)
@@ -713,7 +714,7 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj client.Objec
 				},
 			},
 		}
-	}), r.localPredicate())
+	}), r.localPredicate(obj))
 	if err != nil {
 		return errors.WrapIf(err, "could not create watch for local informer")
 	}
@@ -723,7 +724,7 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj client.Objec
 	return nil
 }
 
-func (r *syncReconciler) localPredicate() predicate.Funcs {
+func (r *syncReconciler) localPredicate(obj client.Object) predicate.Funcs {
 	return predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
 			_, ok := e.Object.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
@@ -732,8 +733,26 @@ func (r *syncReconciler) localPredicate() predicate.Funcs {
 		},
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			_, ok := e.ObjectOld.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
+			if !ok {
+				return ok
+			}
 
-			return ok
+			oldRV := e.ObjectOld.GetResourceVersion()
+			e.ObjectOld.SetResourceVersion(e.ObjectNew.GetResourceVersion())
+			defer e.ObjectOld.SetResourceVersion(oldRV)
+
+			options := []patch.CalculateOption{
+				reconciler.IgnoreManagedFields(),
+			}
+
+			patchResult, err := patch.DefaultPatchMaker.Calculate(e.ObjectOld, e.ObjectNew, options...)
+			if err != nil {
+				return true
+			} else if patchResult.IsEmpty() {
+				return false
+			}
+
+			return true
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
 			_, ok := e.Object.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
