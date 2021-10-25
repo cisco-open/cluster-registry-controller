@@ -714,7 +714,7 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj client.Objec
 				},
 			},
 		}
-	}), r.localPredicate(obj))
+	}), r.localPredicate())
 	if err != nil {
 		return errors.WrapIf(err, "could not create watch for local informer")
 	}
@@ -724,7 +724,7 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj client.Objec
 	return nil
 }
 
-func (r *syncReconciler) localPredicate(obj client.Object) predicate.Funcs {
+func (r *syncReconciler) localPredicate() predicate.Funcs {
 	return predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
 			_, ok := e.Object.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation]
