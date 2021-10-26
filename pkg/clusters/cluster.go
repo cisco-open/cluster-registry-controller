@@ -44,6 +44,7 @@ type Cluster struct {
 	onAliveFuncs          []ClusterFunc
 	onDeadFuncs           []ClusterFunc
 	features              map[string]ClusterFeature
+	kubeconfig            []byte
 
 	controllers        ManagedControllers
 	pendingControllers ManagedControllers
@@ -58,6 +59,12 @@ type (
 func WithSecretID(secretID string) Option {
 	return func(c *Cluster) {
 		c.secretID = &secretID
+	}
+}
+
+func WithKubeconfig(kubeconfig []byte) Option {
+	return func(c *Cluster) {
+		c.kubeconfig = kubeconfig
 	}
 }
 
@@ -249,6 +256,10 @@ func (c *Cluster) GetManager() ctrl.Manager {
 
 func (c *Cluster) GetSecretID() *string {
 	return c.secretID
+}
+
+func (c *Cluster) GetKubeconfig() []byte {
+	return c.kubeconfig
 }
 
 func (c *Cluster) AddController(controller ManagedController) error {
