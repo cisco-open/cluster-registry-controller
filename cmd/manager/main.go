@@ -90,14 +90,14 @@ func main() {
 
 	clustersManager := clusters.NewManager(ctx)
 
-	// sync rule for cluster resources
-	AddClustersSyncRule(clustersManager, mgr, ctrl.Log, config.Configuration(configuration))
+	// // sync rule for cluster resources
+	// AddClustersSyncRule(clustersManager, mgr, ctrl.Log, config.Configuration(configuration))
 
-	// sync rule for cluster secrets
-	AddClusterSecretsSyncRule(clustersManager, mgr, ctrl.Log, config.Configuration(configuration))
+	// // sync rule for cluster secrets
+	// AddClusterSecretsSyncRule(clustersManager, mgr, ctrl.Log, config.Configuration(configuration))
 
-	// sync rule for sync rules
-	AddResourceSyncRuleSyncRule(clustersManager, mgr, ctrl.Log, config.Configuration(configuration))
+	// // sync rule for sync rules
+	// AddResourceSyncRuleSyncRule(clustersManager, mgr, ctrl.Log, config.Configuration(configuration))
 
 	if err = controllers.NewResourceSyncRuleReconciler("resource-sync-rules", ctrl.Log.WithName("controllers").WithName("resource-sync-rule"), clustersManager, config.Configuration(configuration)).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "resource-sync-rule")

@@ -3,17 +3,18 @@
 package config
 
 type Configuration struct {
-	MetricsAddr              string            `mapstructure:"metrics-addr" json:"metricsAddr,omitempty"`
-	LeaderElection           LeaderElection    `mapstructure:"leader-election" json:"leaderElection,omitempty"`
-	Logging                  Logging           `mapstructure:"log" json:"logging,omitempty"`
-	ClusterController        ClusterController `mapstructure:"clusterController" json:"clusterController,omitempty"`
-	SyncController           SyncController    `mapstructure:"syncController" json:"syncController,omitempty"`
-	Namespace                string            `mapstructure:"namespace" json:"namespace,omitempty"`
-	ProvisionLocalCluster    string            `mapstructure:"provision-local-cluster" json:"provisionLocalCluster,omitempty"`
-	ManageLocalClusterSecret bool              `mapstructure:"manage-local-cluster-secret" json:"manageLocalClusterSecret,omitempty"`
-	ReaderServiceAccountName string            `mapstructure:"reader-service-account-name" json:"readerServiceAccountName,omitempty"`
-	NetworkName              string            `mapstructure:"network-name" json:"networkName,omitempty"`
-	APIServerEndpointAddress string            `mapstructure:"apiserver-endpoint-address" json:"apiServerEndpointAddress,omitempty"`
+	MetricsAddr                string            `mapstructure:"metrics-addr" json:"metricsAddr,omitempty"`
+	LeaderElection             LeaderElection    `mapstructure:"leader-election" json:"leaderElection,omitempty"`
+	Logging                    Logging           `mapstructure:"log" json:"logging,omitempty"`
+	ClusterController          ClusterController `mapstructure:"clusterController" json:"clusterController,omitempty"`
+	SyncController             SyncController    `mapstructure:"syncController" json:"syncController,omitempty"`
+	Namespace                  string            `mapstructure:"namespace" json:"namespace,omitempty"`
+	ProvisionLocalCluster      string            `mapstructure:"provision-local-cluster" json:"provisionLocalCluster,omitempty"`
+	ManageLocalClusterSecret   bool              `mapstructure:"manage-local-cluster-secret" json:"manageLocalClusterSecret,omitempty"`
+	ReaderServiceAccountName   string            `mapstructure:"reader-service-account-name" json:"readerServiceAccountName,omitempty"`
+	NetworkName                string            `mapstructure:"network-name" json:"networkName,omitempty"`
+	APIServerEndpointAddress   string            `mapstructure:"apiserver-endpoint-address" json:"apiServerEndpointAddress,omitempty"`
+	CoreResourcesSourceEnabled bool              `mapstructure:"core-resources-source-enabled" json:"coreResourcesSourceEnabled,omitempty"`
 }
 
 type ClusterController struct {

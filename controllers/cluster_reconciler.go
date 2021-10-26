@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	"github.com/banzaicloud/operator-tools/pkg/reconciler"
@@ -315,6 +316,11 @@ func (r *ClusterReconciler) reconcileLocalCluster(ctx context.Context, cluster *
 		return errors.WithStackIf(err)
 	}
 
+	err = r.reconcileCoreSyncers()
+	if err != nil {
+		return errors.WithStackIf(err)
+	}
+
 	return nil
 }
 
@@ -419,12 +425,73 @@ func (r *ClusterReconciler) setQueue(q workqueue.RateLimitingInterface) {
 func (r *ClusterReconciler) SetupWithController(ctx context.Context, ctrl controller.Controller) error {
 	err := r.ManagedReconciler.SetupWithController(ctx, ctrl)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
-	return ctrl.Watch(&InMemorySource{
+	localClusterMapFunc := func(obj client.Object) []reconcile.Request {
+		clusters := &clusterregistryv1alpha1.ClusterList{}
+		err := r.GetClient().List(ctx, clusters)
+		if err != nil {
+			r.GetLogger().Error(err, "could not list clusters")
+
+			return nil
+		}
+
+		items := []reconcile.Request{}
+
+		for _, c := range clusters.Items {
+			c := c
+			if c.Status.Type == clusterregistryv1alpha1.ClusterTypeLocal {
+				items = append(items, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      c.GetName(),
+						Namespace: c.GetNamespace(),
+					},
+				})
+			}
+		}
+
+		return items
+	}
+
+	for _, t := range []client.Object{
+		&clusterregistryv1alpha1.ResourceSyncRule{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "ResourceSyncRule",
+				APIVersion: clusterregistryv1alpha1.SchemeBuilder.GroupVersion.String(),
+			},
+		},
+		&clusterregistryv1alpha1.ResourceSyncRule{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "ClusterFeature",
+				APIVersion: clusterregistryv1alpha1.SchemeBuilder.GroupVersion.String(),
+			},
+		},
+	} {
+		err = ctrl.Watch(&source.Kind{
+			Type: t,
+		}, handler.EnqueueRequestsFromMapFunc(localClusterMapFunc), &predicate.Funcs{
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				if v, ok := e.ObjectOld.GetLabels()[CoreResourceLabelName]; ok && v == "true" {
+					return true
+				}
+
+				return false
+			},
+		})
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	err = ctrl.Watch(&InMemorySource{
 		reconciler: r,
 	}, handler.Funcs{})
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
 }
 
 func (r *ClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
