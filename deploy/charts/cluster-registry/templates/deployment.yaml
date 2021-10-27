@@ -69,11 +69,13 @@ spec:
             - name: READER_SERVICE_ACCOUNT_NAME
               value: "{{ include "cluster-registry-controller.fullname" . }}-reader"
             - name: NETWORK_NAME
-              value: "{{ .Values.network.name }}"
+              value: "{{ .Values.controller.network.name }}"
             - name: MANAGE_LOCAL_CLUSTER_SECRET
               value: "{{ .Values.localCluster.manageSecret }}"
             - name: APISERVER_ENDPOINT_ADDRESS
-              value: "{{ .Values.apiServerEndpointAddress }}"
+              value: "{{ .Values.controller.apiServerEndpointAddress }}"
+            - name: CORE_RESOURCES_SOURCE_ENABLED
+              value: "{{ .Values.controller.coreResourceSource.enabled }}"
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -54,8 +54,8 @@ controller:
     format: json
     verbosity: 0
   workers: 2
-
-network:
-  name: "default"
-
-apiServerEndpointAddress: ""
+  apiServerEndpointAddress: ""
+  network:
+    name: "default"
+  coreResourceSource:
+    enabled: true

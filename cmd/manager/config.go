@@ -21,14 +21,16 @@ type Configuration config.Configuration
 func configure() Configuration {
 	p := flag.NewFlagSet(FriendlyServiceName, flag.ExitOnError)
 	initConfiguration(viper.GetViper(), p)
-	_ = p.Parse(os.Args[1:])
+	err := p.Parse(os.Args[1:])
+	if err != nil {
+		panic(errors.WrapIf(err, "failed to parse arguments"))
+	}
 
 	var config Configuration
 	bindEnvs(config)
-	err := viper.Unmarshal(&config)
+	err = viper.Unmarshal(&config)
 	if err != nil {
-		setupLog.Error(err, "failed to unmarshal configuration")
-		os.Exit(1)
+		panic(errors.WrapIf(err, "failed to unmarshal configuration"))
 	}
 
 	// Show version if asked for
@@ -98,6 +100,9 @@ func initConfiguration(v *viper.Viper, p *flag.FlagSet) {
 
 	p.String("apiserver-endpoint-address", "", "Endpoint address of the API server of the cluster the controller is running on. It is used in the managed cluster secret and/or in the provisioned local cluster resource if one or both of those features are turned on.")
 	_ = viper.BindPFlag("apiserver-endpoint-address", p.Lookup("apiserver-endpoint-address"))
+
+	p.Bool("core-resources-source-enabled", true, "Whether to act as a source for core cluster api resources")
+	_ = viper.BindPFlag("core-resources-source-enabled", p.Lookup("core-resources-source-enabled"))
 
 	v.SetDefault("syncController.workerCount", 1)
 	v.SetDefault("syncController.rateLimit.maxKeys", 1024)
