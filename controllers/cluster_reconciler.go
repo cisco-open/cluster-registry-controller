@@ -3,6 +3,7 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -162,27 +163,46 @@ func (r *ClusterReconciler) getK8SConfigForCluster(ctx context.Context, namespac
 }
 
 func (r *ClusterReconciler) getRemoteCluster(ctx context.Context, cluster *clusterregistryv1alpha1.Cluster) (*clusters.Cluster, error) {
-	secretID := fmt.Sprintf("%s/%s", cluster.Spec.AuthInfo.SecretRef.Namespace, cluster.Spec.AuthInfo.SecretRef.Name)
+	log := r.GetLogger().WithValues("cluster", cluster.Name)
 
+	secretID := fmt.Sprintf("%s/%s", cluster.Spec.AuthInfo.SecretRef.Namespace, cluster.Spec.AuthInfo.SecretRef.Name)
 	remoteCluster, _ := r.clustersManager.Get(cluster.Name)
-	if remoteCluster != nil {
+
+	k8sconfig, err := r.getK8SConfigForCluster(ctx, cluster.Spec.AuthInfo.SecretRef.Namespace, cluster.Spec.AuthInfo.SecretRef.Name)
+	if err != nil {
+		cluster.Status.State = clusterregistryv1alpha1.ClusterStateInvalidAuthInfo
+
+		if remoteCluster != nil {
+			log.Info("cluster secret is removed")
+			err := r.clustersManager.Remove(remoteCluster)
+			if err != nil {
+				return nil, errors.WrapIf(err, "could not remove cluster from manager")
+			}
+		}
+
+		return nil, WrapAsPermanentError(err)
+	}
+
+	if remoteCluster != nil { // nolint:nestif
 		if !remoteCluster.IsAlive() {
 			return nil, WrapAsPermanentError(errors.New("remote cluster is not alive"))
 		}
-		if remoteCluster.GetSecretID() == nil || *remoteCluster.GetSecretID() == secretID {
+		credentialsChanged := false
+		if remoteCluster.GetSecretID() != nil && *remoteCluster.GetSecretID() != secretID {
+			log.Info("cluster secret reference changed")
+			credentialsChanged = true
+		}
+		if len(remoteCluster.GetKubeconfig()) > 0 && !bytes.Equal(k8sconfig, remoteCluster.GetKubeconfig()) {
+			log.Info("cluster secret content changed")
+			credentialsChanged = true
+		}
+		if !credentialsChanged {
 			return remoteCluster, nil
 		}
 		err := r.clustersManager.Remove(remoteCluster)
 		if err != nil {
 			return nil, errors.WrapIf(err, "could not remove cluster from manager")
 		}
-	}
-
-	k8sconfig, err := r.getK8SConfigForCluster(ctx, cluster.Spec.AuthInfo.SecretRef.Namespace, cluster.Spec.AuthInfo.SecretRef.Name)
-	if err != nil {
-		cluster.Status.State = clusterregistryv1alpha1.ClusterStateInvalidAuthInfo
-
-		return nil, WrapAsPermanentError(err)
 	}
 
 	clusterConfig, err := clientcmd.Load(k8sconfig)
@@ -215,7 +235,7 @@ func (r *ClusterReconciler) getRemoteCluster(ctx context.Context, cluster *clust
 		Scheme:             r.GetManager().GetScheme(),
 		MetricsBindAddress: "0",
 		Port:               0,
-	}), clusters.WithOnDeadFunc(onDeadFunc))
+	}), clusters.WithOnDeadFunc(onDeadFunc), clusters.WithKubeconfig(k8sconfig))
 	if err != nil {
 		return nil, errors.WrapIf(err, "could not create new cluster")
 	}
