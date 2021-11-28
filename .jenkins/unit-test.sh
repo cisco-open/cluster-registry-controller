@@ -19,8 +19,5 @@ make license-cache license-check
 echo "Run tests"
 make test
 
-echo "Generate"
-make generate
-
 echo "Static check"
 make lint
