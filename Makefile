@@ -27,15 +27,15 @@ test: ensure-tools fmt vet # Run tests
 	KUBEBUILDER_ASSETS="$${PWD}/bin/kubebuilder/bin" go test ./... -coverprofile cover.out
 
 .PHONY: manager
-manager: generate fmt vet binary ## Build manager binary
+manager: fmt vet binary ## Build manager binary
 
 .PHONY: binary
 binary:
 	go build -ldflags "${LDFLAGS}" -o bin/manager ./cmd/manager
 
 .PHONY: run
-run: generate fmt vet ## Run against the configured Kubernetes cluster in ~/.kube/config
-	go run ./main.go
+run: fmt vet ## Run against the configured Kubernetes cluster in ~/.kube/config
+	go run ./cmd/manager/
 
 fmt: ## Run go fmt against code
 	go fmt ./...
@@ -48,17 +48,6 @@ ensure-tools:
 	@echo "ensure tools"
 	@scripts/download-deps.sh
 	@scripts/install_kubebuilder.sh ${KUBEBUILDER_VERSION}
-
-.PHONY: go-generate
-go-generate: generate-generate
-	go generate ./...
-
-.PHONY: generate-generate
-generate-generate:
-	@${REPO_ROOT}/scripts/generate_generate.sh .
-
-.PHONY: generate
-generate: ensure-tools go-generate ## Generate manifests, CRDs, static assets
 
 # Build the docker image
 docker-build:

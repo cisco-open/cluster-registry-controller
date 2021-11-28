@@ -21,7 +21,6 @@ ignored = [
 ignoreFiles = [
   "*.pb.go",
   "*.gogen.go",
-  "static/generate.go",
   "zz_generated.deepcopy.go",
 ]
 
