@@ -1,5 +1,3 @@
-//go:generate go run ../../static/generate.go
-
 // Copyright (c) 2021 Banzai Cloud Zrt. All Rights Reserved.
 
 package main
@@ -9,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	_ "github.com/shurcooL/vfsgen"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"

@@ -15,13 +15,13 @@ ignored = [
   "gopkg.in/fsnotify.v1",
 
   "wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/api",
+  "wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/deploy/charts",
 ]
 
 [header]
 ignoreFiles = [
   "*.pb.go",
   "*.gogen.go",
-  "static/generate.go",
   "zz_generated.deepcopy.go",
 ]
 

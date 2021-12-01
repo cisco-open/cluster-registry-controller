@@ -15,8 +15,6 @@ require (
 	github.com/gomodule/redigo v1.8.4 // indirect
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.14.0
-	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
-	github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/throttled/throttled v2.2.5+incompatible
@@ -101,5 +99,3 @@ require (
 	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 )
-
-replace wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/static => ./static
