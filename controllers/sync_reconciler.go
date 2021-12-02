@@ -341,6 +341,10 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 		}),
 		predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
+				if r.isOwnedByUs(e.Object) {
+					return false
+				}
+
 				return isObjectMatch(e.Object, gvk)
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
@@ -359,14 +363,24 @@ func (r *syncReconciler) SetupWithController(ctx context.Context, ctrl controlle
 					return false
 				}
 
-				ok := isObjectMatch(e.ObjectNew, gvk)
+				if r.isOwnedByUs(e.ObjectNew) {
+					return false
+				}
 
-				return ok
+				return isObjectMatch(e.ObjectNew, gvk)
 			},
 			DeleteFunc: func(e event.DeleteEvent) bool {
+				if r.isOwnedByUs(e.Object) {
+					return false
+				}
+
 				return isObjectMatch(e.Object, gvk)
 			},
 			GenericFunc: func(e event.GenericEvent) bool {
+				if r.isOwnedByUs(e.Object) {
+					return false
+				}
+
 				return isObjectMatch(e.Object, gvk)
 			},
 		},
@@ -613,6 +627,10 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, 
 
 func (r *syncReconciler) isOwnedByAnotherAliveCluster(ownerClusterID string) bool {
 	return ownerClusterID != "" && r.clustersManager.GetAliveClustersByID()[ownerClusterID] != nil && ownerClusterID != r.clusterID
+}
+
+func (r *syncReconciler) isOwnedByUs(object client.Object) bool {
+	return object.GetAnnotations()[clusterregistryv1alpha1.OwnershipAnnotation] == r.localClusterID
 }
 
 func (r *syncReconciler) getObjectDesiredState() *reconciler.DynamicDesiredState {
