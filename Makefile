@@ -25,6 +25,7 @@ endif
 .PHONY: test
 test: ensure-tools fmt vet # Run tests
 	KUBEBUILDER_ASSETS="$${PWD}/bin/kubebuilder/bin" go test ./... -coverprofile cover.out
+	cd deploy/charts && go test
 
 .PHONY: manager
 manager: fmt vet binary ## Build manager binary
