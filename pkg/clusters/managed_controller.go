@@ -115,6 +115,11 @@ func (c *managedController) Start(ctx context.Context, mgr ctrl.Manager) error {
 			return errors.WrapIf(err, "pre check error")
 		}
 
+		err = c.reconciler.WritePreCheck(c.ctrlContext, c.mgr.GetClient())
+		if err != nil {
+			return errors.WrapIf(err, "write check error")
+		}
+
 		err = c.start()
 		if err != nil {
 			return errors.WrapIf(err, "could not start controller")

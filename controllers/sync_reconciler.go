@@ -126,6 +126,44 @@ func (r *syncReconciler) PreCheck(ctx context.Context, client client.Client) err
 	return nil
 }
 
+func (r *syncReconciler) WritePreCheck(ctx context.Context, client client.Client) error {
+	// Check rules group of "ClusterRole" and "ClusterRoleBinding"
+	switch {
+		case r.gvk.Group == "ClusterRole":
+			break
+		case r.gvk.Group == "ClusterRoleBinding":
+			break
+		default:
+			return nil
+	}
+
+	// Local write permission check
+	for _, verb := range []string{"create", "patch", "update", "delete"} {
+		attr := &authorizationv1.ResourceAttributes{
+			Verb:     verb,
+			Group:    r.localGVK.Group,
+			Version:  r.localGVK.Version,
+			Resource: strings.ToLower(pluralize.NewClient().Plural(r.localGVK.Kind)),
+		}
+		selfSubjectAccessReview := authorizationv1.SelfSubjectAccessReview{
+			Spec: authorizationv1.SelfSubjectAccessReviewSpec{
+				ResourceAttributes: attr,
+			},
+		}
+
+		err := client.Create(ctx, &selfSubjectAccessReview)
+		if err != nil {
+			return errors.WrapIfWithDetails(err, "failed to create self subject access review", "attributes", attr)
+		}
+
+		if !selfSubjectAccessReview.Status.Allowed {
+			return errors.Errorf("do not have local access to %s gvk: %s", attr.Verb, r.gvk)
+		}
+	}
+
+	return nil
+}
+
 func (r *syncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	result, err := r.reconcile(ctx, req)
 	if err != nil {
