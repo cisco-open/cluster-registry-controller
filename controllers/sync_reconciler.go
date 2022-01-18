@@ -126,18 +126,8 @@ func (r *syncReconciler) PreCheck(ctx context.Context, client client.Client) err
 	return nil
 }
 
+// WritePreCheck Check for write permissions on local cluster
 func (r *syncReconciler) WritePreCheck(ctx context.Context, client client.Client) error {
-	// Check rules group of "ClusterRole" and "ClusterRoleBinding"
-	switch {
-		case r.gvk.Group == "ClusterRole":
-			break
-		case r.gvk.Group == "ClusterRoleBinding":
-			break
-		default:
-			return nil
-	}
-
-	// Local write permission check
 	for _, verb := range []string{"create", "patch", "update", "delete"} {
 		attr := &authorizationv1.ResourceAttributes{
 			Verb:     verb,
