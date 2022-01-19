@@ -123,8 +123,7 @@ func (r *syncReconciler) PreCheck(ctx context.Context, client client.Client) err
 		}
 	}
 
-	err := r.writePreCheck(ctx)
-	if err != nil {
+	if err := r.writePreCheck(ctx); err != nil {
 		return err
 	}
 
