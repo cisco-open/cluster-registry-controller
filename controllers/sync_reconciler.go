@@ -127,7 +127,7 @@ func (r *syncReconciler) PreCheck(ctx context.Context, client client.Client) err
 }
 
 // WritePreCheck Check for write permissions on local cluster
-func (r *syncReconciler) WritePreCheck(ctx context.Context, client client.Client) error {
+func (r *syncReconciler) WritePreCheck(ctx context.Context) error {
 	for _, verb := range []string{"create", "patch", "update", "delete"} {
 		attr := &authorizationv1.ResourceAttributes{
 			Verb:     verb,
@@ -141,7 +141,15 @@ func (r *syncReconciler) WritePreCheck(ctx context.Context, client client.Client
 			},
 		}
 
-		err := client.Create(ctx, &selfSubjectAccessReview)
+		localClient, err := client.New(r.localMgr.GetConfig(), client.Options{
+			Scheme: r.localMgr.GetScheme(),
+			Mapper: r.localMgr.GetRESTMapper(),
+		})
+		if err != nil {
+			return errors.WrapIfWithDetails(err, "error creating local client")
+		}
+
+		err = localClient.Create(ctx, &selfSubjectAccessReview)
 		if err != nil {
 			return errors.WrapIfWithDetails(err, "failed to create self subject access review", "attributes", attr)
 		}

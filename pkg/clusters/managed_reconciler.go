@@ -18,7 +18,7 @@ type ManagedReconciler interface {
 	reconcile.Reconciler
 
 	PreCheck(ctx context.Context, client client.Client) error
-	WritePreCheck(ctx context.Context, client client.Client) error
+	WritePreCheck(ctx context.Context) error
 	DoCleanup()
 	GetName() string
 	GetManager() ctrl.Manager
@@ -66,7 +66,7 @@ func (r *ManagedReconcilerBase) PreCheck(ctx context.Context, client client.Clie
 	return nil
 }
 
-func (r *ManagedReconcilerBase) WritePreCheck(ctx context.Context, client client.Client) error {
+func (r *ManagedReconcilerBase) WritePreCheck(ctx context.Context) error {
 	return nil
 }
 
