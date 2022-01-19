@@ -123,11 +123,24 @@ func (r *syncReconciler) PreCheck(ctx context.Context, client client.Client) err
 		}
 	}
 
+	err := r.writePreCheck(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // WritePreCheck Check for write permissions on local cluster
-func (r *syncReconciler) WritePreCheck(ctx context.Context) error {
+func (r *syncReconciler) writePreCheck(ctx context.Context) error {
+	localClient, err := client.New(r.localMgr.GetConfig(), client.Options{
+		Scheme: r.localMgr.GetScheme(),
+		Mapper: r.localMgr.GetRESTMapper(),
+	})
+	if err != nil {
+		return errors.WrapIfWithDetails(err, "error creating local client")
+	}
+
 	for _, verb := range []string{"create", "patch", "update", "delete"} {
 		attr := &authorizationv1.ResourceAttributes{
 			Verb:     verb,
@@ -139,14 +152,6 @@ func (r *syncReconciler) WritePreCheck(ctx context.Context) error {
 			Spec: authorizationv1.SelfSubjectAccessReviewSpec{
 				ResourceAttributes: attr,
 			},
-		}
-
-		localClient, err := client.New(r.localMgr.GetConfig(), client.Options{
-			Scheme: r.localMgr.GetScheme(),
-			Mapper: r.localMgr.GetRESTMapper(),
-		})
-		if err != nil {
-			return errors.WrapIfWithDetails(err, "error creating local client")
 		}
 
 		err = localClient.Create(ctx, &selfSubjectAccessReview)
