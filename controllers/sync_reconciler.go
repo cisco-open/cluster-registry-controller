@@ -123,6 +123,46 @@ func (r *syncReconciler) PreCheck(ctx context.Context, client client.Client) err
 		}
 	}
 
+	if err := r.writePreCheck(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// WritePreCheck Check for write permissions on local cluster
+func (r *syncReconciler) writePreCheck(ctx context.Context) error {
+	localClient, err := client.New(r.localMgr.GetConfig(), client.Options{
+		Scheme: r.localMgr.GetScheme(),
+		Mapper: r.localMgr.GetRESTMapper(),
+	})
+	if err != nil {
+		return errors.WrapIfWithDetails(err, "error creating local client")
+	}
+
+	for _, verb := range []string{"create", "patch", "update", "delete"} {
+		attr := &authorizationv1.ResourceAttributes{
+			Verb:     verb,
+			Group:    r.localGVK.Group,
+			Version:  r.localGVK.Version,
+			Resource: strings.ToLower(pluralize.NewClient().Plural(r.localGVK.Kind)),
+		}
+		selfSubjectAccessReview := authorizationv1.SelfSubjectAccessReview{
+			Spec: authorizationv1.SelfSubjectAccessReviewSpec{
+				ResourceAttributes: attr,
+			},
+		}
+
+		err = localClient.Create(ctx, &selfSubjectAccessReview)
+		if err != nil {
+			return errors.WrapIfWithDetails(err, "failed to create self subject access review", "attributes", attr)
+		}
+
+		if !selfSubjectAccessReview.Status.Allowed {
+			return errors.Errorf("do not have local access to %s gvk: %s", attr.Verb, r.gvk)
+		}
+	}
+
 	return nil
 }
 
