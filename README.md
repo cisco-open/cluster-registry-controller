@@ -77,7 +77,7 @@ The cluster group is successfully formed at this point.
 
 1. Install the cluster registry controller on the new cluster as shown above.
 
-2. Choose one cluster from the existing cluster group and the the Cluster and secret resource swap with the new cluster:
+2. Choose one cluster from the existing cluster group and perform the Cluster and secret resource swap with the new cluster:
 
    From first cluster to third cluster:
     ```
