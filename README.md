@@ -213,7 +213,7 @@ If other resources should be synced, then the RBAC rules of the operator should 
     cluster-registry.k8s.cisco.com/reader-aggregated: "true"
   ```
   
-- On the cluster, where the resources are written to (Usually where `ResourceSyncRule` resources are present)
+- On the cluster, where the resources are written to (usually where `ResourceSyncRule` resources are present)
   a ClusterRole should be defined with the correct write roles and the following label should be added:
 
   ```
