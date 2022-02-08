@@ -32,13 +32,11 @@ It can be further adjusted, from which clusters and to which clusters certain re
 
 ### Form cluster group with two clusters
 
-1. Install cluster registry controller on the first cluster:
+1. Install cluster registry controller on the first cluster. The following command installs the cluster registry controller on your cluster, creates a Cluster CR with the name `FIRST-CLUSTER-NAME`, and it also creates a secret that holds a Kubeconfig with read access to this cluster.
 
     ```
     helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=<FIRST-CLUSTER-NAME>
     ```
-   
-    This command will install the cluster registry controller on your cluster, it will also create a Cluster CR with the name `FIRST-CLUSTER-NAME` and it will create a secret as well that holds a Kubeconfig with read access to this cluster.
 
     > Tip: Use the `--set apiServerEndpointAddress=<PUBLIC-API-SERVER-ADDRESS>` flag, if your Kubernetes cluster API returns private ip for the api server.
 
