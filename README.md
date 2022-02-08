@@ -60,12 +60,12 @@ It can be further adjusted, from which clusters and to which clusters certain re
     kubectl get secret <SECOND-CLUSTER-NAME> -o yaml | pbcopy     pbpaste | kubectl apply -f -
     ```
 
-4. Check the status of the Cluster CRs:
+4. Check the status of the Cluster CRs. Note the following points:
 
-    Both Cluster CRs should show `Synced` state.
-    On the first cluster, the <FIRST-CLUSTER-NAME> Cluster CR should be type local in the status, the
+    - Both Cluster CRs should show `Synced` state.
+    - On the first cluster, the <FIRST-CLUSTER-NAME> Cluster CR should be type local in the status, the
     <SECOND-CLUSTER-NAME> should be peer.
-    On the second cluster, the <SECOND-CLUSTER-NAME> Cluster CR should be type local in the status, the
+    - On the second cluster, the <SECOND-CLUSTER-NAME> Cluster CR should be type local in the status, the
     <FIRST-CLUSTER-NAME> should be peer.
     
     > The type in the Cluster status is determined by the clusterID field in the Cluster spec and by the 
