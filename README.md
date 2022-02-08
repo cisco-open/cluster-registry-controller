@@ -91,7 +91,7 @@ The cluster group is successfully formed at this point.
     kubectl get secret <THIRD-CLUSTER-NAME> -o yaml | pbcopy     pbpaste | kubectl apply -f -
     ```
    
-    Important to note, that **you don't need to do the Cluster and secret resource swap between the new cluster and 
+    **You don't need to do the Cluster and secret resource swap between the new cluster and 
     any other cluster in the cluster group.**
     The cluster registry controller automatically syncs these Cluster and secret resources between the clusters in the 
     cluster group and once a new cluster is added to the cluster group in any of the clusters, then it will be synced
