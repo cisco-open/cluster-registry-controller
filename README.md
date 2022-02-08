@@ -16,7 +16,7 @@ In this scenario, the cluster registry controller is deployed to all Kubernetes 
 The same `Cluster` CRs should be placed on all participating Kubernetes clusters as well.
 Also, the credentials for all clusters should be distributed to all clusters (these are usually stored in k8s secrets).
 
-> The cluster registry controller syncs the `Cluster` CR and related secret resources across clusters as well
+> The cluster registry controller syncs the `Cluster` CR and related secret resources across clusters
 > to help bootstrap the cluster group itself.
 
 Users can define their own `ResourceSyncRule` resources to sync k8s resources between these clusters.
