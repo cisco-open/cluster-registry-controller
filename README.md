@@ -40,13 +40,11 @@ It can be further adjusted, from which clusters and to which clusters certain re
 
     > Tip: Use the `--set apiServerEndpointAddress=<PUBLIC-API-SERVER-ADDRESS>` flag, if your Kubernetes cluster API returns private ip for the api server.
 
-2. Install cluster registry controller on the second cluster:
+2. Install cluster registry controller on the second cluster. This command installs the cluster registry controller on your cluster, creates a Cluster CR with the name `SECOND-CLUSTER-NAME`, and it also creates a secret that holds a Kubeconfig with read access to this cluster.
 
     ```
     helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=<SECOND-CLUSTER-NAME>
     ```
-
-   This command will install the cluster registry controller on your cluster, it will also create a Cluster CR with the name `SECOND-CLUSTER-NAME` and it will create a secret as well that holds a Kubeconfig with read access to this cluster.
 
 3. Copy/paste Cluster and secret resources from first->second and second->first cluster:
     
