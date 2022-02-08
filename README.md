@@ -46,9 +46,7 @@ It can be further adjusted, from which clusters and to which clusters certain re
     helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=<SECOND-CLUSTER-NAME>
     ```
 
-3. Copy/paste Cluster and secret resources from first->second and second->first cluster:
-    
-    Secret is needed so that the cluster registry controller from one cluster can read from the other cluster.
+3. Copy/paste Cluster and secret resources from first->second and second->first cluster. The secret is needed so that the cluster registry controller of one cluster can read from the other cluster.
 
     From first cluster to second cluster:
     ```
