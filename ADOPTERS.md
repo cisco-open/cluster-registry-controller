@@ -6,4 +6,4 @@ This is a list of adopters of cluster registry controller:
   automatically: https://github.com/banzaicloud/istio-operator/tree/release-1.11/internal/assets/manifests/resource-sync-rule/templates
 - The open-source Cisco Koperator: https://github.com/banzaicloud/koperator
 - Cisco Service Mesh Manager (SMM) https://eti.cisco.com/appnet
-- Cisco Streaming Data Manager (SDM)
+- Cisco Streaming Data Manager (SDM) https://eti.cisco.com/appnet
