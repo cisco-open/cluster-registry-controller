@@ -145,7 +145,7 @@ The cluster group is successfully formed at this point.
 
 #### Sync to a set of clusters
 
-Cluster registry controller can be configured, so that it only sync to some specific clusters in the cluster group (instead of all
+Cluster registry controller can be configured to sync only to specific clusters in the cluster group (instead of all
 of them).
 
 1. Add the following annotation to the `ResourceSyncRule` on the first cluster:
