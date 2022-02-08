@@ -140,7 +140,7 @@ The cluster group is successfully formed at this point.
     This `ResourceSyncRule` resource itself and the `secret` resource as well should appear shortly on all 
     clusters of the cluster group.
     
-    At this point, if a secret from any of the clusters (except from the third one when it originates from) is deleted
+    At this point, if a secret from any of the clusters (except from the one where it originates from) is deleted
     or modified, it will be synced back immediately by the cluster registry controller.
 
 #### Sync to a set of clusters
