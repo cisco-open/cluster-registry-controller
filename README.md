@@ -14,7 +14,7 @@ The cluster registry controller fills the status of the `Cluster` CR with cluste
 The controller is mostly useful in multi-cluster scenarios.
 In this scenario, the cluster registry controller is deployed to all Kubernetes clusters.
 The same `Cluster` CRs should be placed on all participating Kubernetes clusters as well.
-Also, the credentials for all clusters should be distributed for all clusters (these are usually stored in k8s secrets).
+Also, the credentials for all clusters should be distributed to all clusters (these are usually stored in k8s secrets).
 
 > The cluster registry controller syncs the `Cluster` CR and related secret resources across clusters as well
 > to help bootstrap the cluster group itself.
