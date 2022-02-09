@@ -168,7 +168,8 @@ of them). To do that, you must add an annotation to the cluster where you don't 
 #### Sync from a set of clusters
 
 Cluster registry controller can be configured, to only sync from specific clusters in the cluster group (instead of all
-of them). To do that, you must add a specific field to the clusters where you want to sync from.
+of them). To do that, you must create a `ClusterFeature` resource on the clusters where you want to sync from and add a
+`clusterFeatureMatch` field to the `ResourceSyncRule` resources on the clusters where you want to sync to.
 
 1. Add the following field to the `ResourceSyncRule` spec on the first cluster:
 
