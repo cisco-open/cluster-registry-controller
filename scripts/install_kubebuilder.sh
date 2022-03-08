@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2019 Banzai Cloud Zrt. All Rights Reserved.
+# Copyright (c) 2021, and 2022 Cisco and/or its affiliates. All rights reserved.
 
 set -euo pipefail
 
