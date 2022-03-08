@@ -498,6 +498,7 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 	}
 
 	delete(objAnnotations, operatortoolstypes.BanzaiCloudManagedComponent)
+	delete(objAnnotations, operatortoolstypes.BanzaiCloudRelatedTo)
 	delete(objAnnotations, patch.LastAppliedConfig)
 	delete(objAnnotations, corev1.LastAppliedConfigAnnotation)
 	obj.SetAnnotations(objAnnotations)
