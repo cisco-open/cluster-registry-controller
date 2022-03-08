@@ -25,5 +25,5 @@ ignoreFiles = [
   "zz_generated.deepcopy.go",
 ]
 
-template = """// Copyright (c) :YEAR: Banzai Cloud Zrt. All Rights Reserved.
+template = """Copyright (c) :YEAR: Cisco and/or its affiliates. All rights reserved.
 """
