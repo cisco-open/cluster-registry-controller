@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Banzai Cloud Zrt. All Rights Reserved.
+# Copyright (c) 2021, and 2022 Cisco and/or its affiliates. All rights reserved.
 
 # Build the manager binary
 FROM golang:1.17 as builder
