@@ -38,6 +38,7 @@ import (
 	"github.com/banzaicloud/k8s-objectmatcher/patch"
 	"github.com/banzaicloud/operator-tools/pkg/reconciler"
 	"github.com/banzaicloud/operator-tools/pkg/resources"
+	operatortoolstypes "github.com/banzaicloud/operator-tools/pkg/types"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
 	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/util"
 )
@@ -496,6 +497,7 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 		obj.GetObjectKind().SetGroupVersionKind(gvk)
 	}
 
+	delete(objAnnotations, operatortoolstypes.BanzaiCloudManagedComponent)
 	delete(objAnnotations, patch.LastAppliedConfig)
 	delete(objAnnotations, corev1.LastAppliedConfigAnnotation)
 	obj.SetAnnotations(objAnnotations)
