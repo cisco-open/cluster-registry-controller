@@ -28,6 +28,8 @@ In such a multi-cluster setup, here is how the cluster registry controller works
 By default, the required resources are kept in sync between all clusters.
 It can be further adjusted, from which clusters and to which clusters certain resource should be synced.
 
+The cluster registry controller works in a fully-distributed topology, there is no leader or single point of failure in the system.
+
 ## Quickstart
 
 ### Form cluster group with two clusters
