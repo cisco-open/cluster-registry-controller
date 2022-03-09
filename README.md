@@ -28,6 +28,8 @@ In such a multi-cluster setup, here is how the cluster registry controller works
 By default, the required resources are kept in sync between all clusters.
 It can be further adjusted, from which clusters and to which clusters certain resource should be synced.
 
+The cluster registry controller works in a fully-distributed topology, there is no leader or single point of failure in the system.
+
 ## Quickstart
 
 ### Form cluster group with two clusters
@@ -205,6 +207,8 @@ By default, it has access to read `namespace`, `node` and `secret` resources.
 The quickstart example worked, because the controller was allowed to read the secret from the remote cluster.
 
 If other resources should be synced, then the RBAC rules of the operator should be expanded.
+The [ClusterRole aggregation](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#aggregated-clusterroles) 
+feature is used to achieve this conveniently.
 
 - On the cluster, where the resources are read from (usually where `ClusterFeature` resources are present)
   a ClusterRole should be defined with the correct read roles and the following label should be added:
