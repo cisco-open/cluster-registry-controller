@@ -65,10 +65,10 @@ The cluster registry controller works in a fully-distributed topology, there is 
 4. Check the status of the Cluster CRs. Note the following points:
 
     - Both Cluster CRs should show `Synced` state.
-    - On the first cluster, the <FIRST-CLUSTER-NAME> Cluster CR should be type local in the status, the
-    <SECOND-CLUSTER-NAME> should be peer.
-    - On the second cluster, the <SECOND-CLUSTER-NAME> Cluster CR should be type local in the status, the
-    <FIRST-CLUSTER-NAME> should be peer.
+    - On the first cluster, the `<FIRST-CLUSTER-NAME>` Cluster CR should be type local in the status, the
+    `<SECOND-CLUSTER-NAME>` should be peer.
+    - On the second cluster, the `<SECOND-CLUSTER-NAME>` Cluster CR should be type local in the status, the
+    `<FIRST-CLUSTER-NAME>` should be peer.
     
     > The type in the Cluster status is determined by the clusterID field in the Cluster spec and by the 
     > `kube-system` namespace uid. If they match, the cluster is local, otherwise it is a peer cluster.
