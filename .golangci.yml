@@ -16,6 +16,11 @@ linters:
     - dupl
     - wrapcheck
     - forbidigo
+    - varnamelen
+    - ireturn
+    - gci
+    - containedctx
+    - contextcheck
 
     - gomoddirectives
 
@@ -29,7 +34,7 @@ linters:
 
     # special cases only
     - exhaustivestruct
-  
+
     # deprecated
     - maligned
     - interfacer
@@ -40,7 +45,7 @@ linters-settings:
   gomnd:
     settings:
       mnd:
-        checks: [case,operation,return,assign]
+        checks: [case, operation, return, assign]
   gocognit:
     min-complexity: 50
   cyclop:
@@ -63,11 +68,11 @@ issues:
     - should not use underscores in package names
 
   exclude-rules:
-  # zz_ files are messing up the receiver name
-  - linters:
-    - stylecheck
-    text: "ST1016:"
-  # fake client is still alive
-  - linters:
-    - staticcheck
-    text: "SA1019:"
+    # zz_ files are messing up the receiver name
+    - linters:
+        - stylecheck
+      text: "ST1016:"
+    # fake client is still alive
+    - linters:
+        - staticcheck
+      text: "SA1019:"

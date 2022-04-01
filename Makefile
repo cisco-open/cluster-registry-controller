@@ -12,7 +12,7 @@ CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 REPO_ROOT=$(shell git rev-parse --show-toplevel)
 KUBEBUILDER_VERSION = 2.3.1
 LICENSEI_VERSION = 0.5.0
-GOLANGCI_VERSION = 1.42.1
+GOLANGCI_VERSION = 1.45.2
 CHART_NAME = cluster-registry
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
@@ -78,7 +78,7 @@ bin/golangci-lint: bin/golangci-lint-${GOLANGCI_VERSION}
 	@ln -sf golangci-lint-${GOLANGCI_VERSION} bin/golangci-lint
 bin/golangci-lint-${GOLANGCI_VERSION}:
 	@mkdir -p bin
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b ./bin/ v${GOLANGCI_VERSION}
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | bash -s -- -b ./bin/ v${GOLANGCI_VERSION}
 	@mv bin/golangci-lint $@
 
 DISABLED_LINTERS ?= --disable=gci --disable=goimports --disable=gofumpt
