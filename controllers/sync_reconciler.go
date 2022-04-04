@@ -620,14 +620,7 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, 
 		return errors.New("invalid object")
 	}
 
-	err := r.localClient.Get(ctx, types.NamespacedName{
-		Name:      obj.GetName(),
-		Namespace: obj.GetNamespace(),
-	}, current)
-	if apierrors.IsNotFound(err) { // nolint:nestif
-		if !r.resourceNameMutated { // already deleted
-			return nil
-		}
+	if r.resourceNameMutated { // nolint:nestif
 		if ok, obj, err := r.getObjectByOriginalName(ctx, obj, current.GetObjectKind().GroupVersionKind()); err != nil {
 			return err
 		} else if ok {
@@ -635,8 +628,16 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, 
 		} else {
 			return nil
 		}
-	} else if err != nil {
-		return err
+	} else {
+		err := r.localClient.Get(ctx, types.NamespacedName{
+			Name:      obj.GetName(),
+			Namespace: obj.GetNamespace(),
+		}, current)
+		if apierrors.IsNotFound(err) {
+			return nil
+		} else if err != nil {
+			return err
+		}
 	}
 
 	log = log.WithValues("resource", types.NamespacedName{
@@ -658,7 +659,7 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, 
 		return nil
 	}
 
-	err = r.localClient.Delete(ctx, current)
+	err := r.localClient.Delete(ctx, current)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
