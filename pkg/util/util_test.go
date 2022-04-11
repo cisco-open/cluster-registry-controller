@@ -13,7 +13,7 @@ import (
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	"github.com/banzaicloud/operator-tools/pkg/resources"
 	"github.com/banzaicloud/operator-tools/pkg/utils"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/util"
+	"github.com/cisco-open/cluster-registry-controller/pkg/util"
 )
 
 func TestK8SResourceOverlayPatchExecuteTemplate(t *testing.T) {

@@ -39,8 +39,8 @@ import (
 	"github.com/banzaicloud/operator-tools/pkg/reconciler"
 	"github.com/banzaicloud/operator-tools/pkg/resources"
 	operatortoolstypes "github.com/banzaicloud/operator-tools/pkg/types"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/util"
+	"github.com/cisco-open/cluster-registry-controller/pkg/clusters"
+	"github.com/cisco-open/cluster-registry-controller/pkg/util"
 )
 
 const (

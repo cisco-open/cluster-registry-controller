@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
+	"github.com/cisco-open/cluster-registry-controller/pkg/clusters"
 )
 
 func TestClusterFeatures(t *testing.T) {
