@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
+	"github.com/cisco-open/cluster-registry-controller/pkg/clusters"
 )
 
 type ClusterFeatureReconciler struct {

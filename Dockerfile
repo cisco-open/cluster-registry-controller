@@ -1,13 +1,13 @@
 # Copyright (c) 2021, and 2022 Cisco and/or its affiliates. All rights reserved.
 
 # Build the manager binary
-FROM golang:1.17 as builder
+FROM golang:1.18.0 as builder
 
 ARG GITHUB_ACCESS_TOKEN
 
 ARG GOPROXY="https://proxy.golang.org,direct"
 ENV GOPROXY="${GOPROXY}"
-ENV GOPRIVATE='github.cisco.com,github.com/banzaicloud'
+ENV GOPRIVATE='github.com/cisco-open,github.com/banzaicloud'
 ENV GONOPROXY='gopkg.in,go.uber.org'
 ENV GOFLAGS="-mod=readonly"
 

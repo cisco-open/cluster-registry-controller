@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clustermeta"
+	"github.com/cisco-open/cluster-registry-controller/pkg/clustermeta"
 )
 
 func TestProviderDetector(t *testing.T) {

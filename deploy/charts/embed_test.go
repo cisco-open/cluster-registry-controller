@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/deploy/charts"
+	"github.com/cisco-open/cluster-registry-controller/deploy/charts"
 )
 
 func TestEmbed(t *testing.T) {

@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"sigs.k8s.io/yaml"
 
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
+	"github.com/cisco-open/cluster-registry-controller/internal/config"
 )
 
 type Configuration config.Configuration

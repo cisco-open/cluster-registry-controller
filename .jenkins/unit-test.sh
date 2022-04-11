@@ -4,7 +4,7 @@ set -x
 set -e
 
 # Dependency on banzaicloud/cluster-registry
-export GOPRIVATE='wwwin-github.cisco.com,github.cisco.com,github.com/banzaicloud'
+export GOPRIVATE='github.com/cisco-open,github.com/banzaicloud'
 export GONOPROXY='gopkg.in,go.uber.org'
 
 export GOPATH=$(go env GOPATH)

@@ -29,10 +29,10 @@ import (
 
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	"github.com/banzaicloud/operator-tools/pkg/reconciler"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/internal/config"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clustermeta"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/clusters"
-	"wwwin-github.cisco.com/cisco-app-networking/cluster-registry-controller/pkg/util"
+	"github.com/cisco-open/cluster-registry-controller/internal/config"
+	"github.com/cisco-open/cluster-registry-controller/pkg/clustermeta"
+	"github.com/cisco-open/cluster-registry-controller/pkg/clusters"
+	"github.com/cisco-open/cluster-registry-controller/pkg/util"
 )
 
 type ClusterReconciler struct {
