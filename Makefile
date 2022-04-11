@@ -2,6 +2,7 @@
 VERSION ?= $(shell git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
 COMMIT_HASH ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 BUILD_DATE ?= $(shell date +%FT%T%z)
+UNAME := $(shell uname)
 LDFLAGS += -X main.version=${VERSION} -X main.commitHash=${COMMIT_HASH} -X main.buildDate=${BUILD_DATE}
 
 # Image URL to use all building/pushing image targets
@@ -10,7 +11,9 @@ IMG ?= controller:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 REPO_ROOT=$(shell git rev-parse --show-toplevel)
-KUBEBUILDER_VERSION = 2.3.1
+GOTESTSUM_VERSION = 0.6.0
+KUBEBUILDER_TOOLS_VERSION=1.19.2
+KUBEBUILDER_ASSETS_BINARY_DIR = kubebuilder-tools/${KUBEBUILDER_TOOLS_VERSION}/bin
 LICENSEI_VERSION = 0.5.0
 GOLANGCI_VERSION = 1.45.2
 CHART_NAME = cluster-registry
@@ -22,9 +25,20 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+bin/gotestsum: bin/gotestsum-${GOTESTSUM_VERSION}
+	@ln -sf gotestsum-${GOTESTSUM_VERSION} bin/gotestsum
+bin/gotestsum-${GOTESTSUM_VERSION}:
+	@mkdir -p bin
+ifeq ($(UNAME), Darwin)
+	curl -L https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_darwin_amd64.tar.gz | tar -zOxf - gotestsum > ./bin/gotestsum-${GOTESTSUM_VERSION} && chmod +x ./bin/gotestsum-${GOTESTSUM_VERSION}
+endif
+ifeq ($(UNAME), Linux)
+	curl -L https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_linux_amd64.tar.gz | tar -zOxf - gotestsum > ./bin/gotestsum-${GOTESTSUM_VERSION} && chmod +x ./bin/gotestsum-${GOTESTSUM_VERSION}
+endif
+
 .PHONY: test
-test: ensure-tools fmt vet # Run tests
-	KUBEBUILDER_ASSETS="$${PWD}/bin/kubebuilder/bin" go test ./... -coverprofile cover.out
+test: bin/gotestsum ensure-tools fmt vet # Run tests
+	KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true KUBEBUILDER_ASSETS="$${PWD}/bin/${KUBEBUILDER_ASSETS_BINARY_DIR}" bin/gotestsum ./... -coverprofile cover.out
 	cd deploy/charts && go test
 
 .PHONY: manager
@@ -48,7 +62,13 @@ vet: ## Run go vet against code
 ensure-tools:
 	@echo "ensure tools"
 	@scripts/download-deps.sh
-	@scripts/install_kubebuilder.sh ${KUBEBUILDER_VERSION}
+	@scripts/install_kubebuilder_tools.sh --kubebuilder-tools-version=${KUBEBUILDER_TOOLS_VERSION}
+
+# This will clean up the local kubebuilder-tools directory and re-download the assets again.
+.PHONY: download-kubebuilder-tools
+download-kubebuilder-tools:
+	@rm -r bin/kubebuilder-tools/${KUBEBUILDER_TOOLS_VERSION}
+	@scripts/install_kubebuilder_tools.sh --kubebuilder-tools-version=${KUBEBUILDER_TOOLS_VERSION}
 
 # Build the docker image
 docker-build:
