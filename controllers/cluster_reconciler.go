@@ -316,7 +316,7 @@ func (r *ClusterReconciler) reconcileLocalCluster(ctx context.Context, cluster *
 		return errors.WithStackIf(err)
 	}
 
-	err = r.reconcileCoreSyncers()
+	err = r.reconcileCoreSyncers(cluster)
 	if err != nil {
 		return errors.WithStackIf(err)
 	}

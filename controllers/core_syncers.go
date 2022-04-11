@@ -3,10 +3,12 @@
 package controllers
 
 import (
+	"emperror.dev/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	"github.com/banzaicloud/operator-tools/pkg/reconciler"
@@ -18,7 +20,7 @@ const (
 	CoreResourceLabelName          = "cluster-registry-controller.k8s.cisco.com/core-sync-resource"
 )
 
-func (r *ClusterReconciler) reconcileCoreSyncers() error {
+func (r *ClusterReconciler) reconcileCoreSyncers(cluster *clusterregistryv1alpha1.Cluster) error {
 	rec := reconciler.NewGenericReconciler(
 		r.GetManager().GetClient(),
 		r.GetLogger(),
@@ -33,12 +35,17 @@ func (r *ClusterReconciler) reconcileCoreSyncers() error {
 		clusterFeatureDesiredState = reconciler.StatePresent
 	}
 
-	for o, ds := range map[runtime.Object]reconciler.DesiredState{
+	for o, ds := range map[client.Object]reconciler.DesiredState{
 		r.coreSyncersClusterFeature(): clusterFeatureDesiredState,
 		r.clustersSyncRule():          reconciler.StatePresent,
 		r.clusterSecretsSyncRule():    reconciler.StatePresent,
 		r.resourceSyncRuleSync():      reconciler.StatePresent,
 	} {
+		// set resource owner
+		if err := controllerutil.SetControllerReference(cluster, o, r.GetManager().GetScheme()); err != nil {
+			return errors.WrapIfWithDetails(err, "couldn't set local Cluster as resource owner for resource",
+				"namespace", o.GetNamespace(), "name", o.GetName())
+		}
 		_, err := rec.ReconcileResource(o, ds)
 		if err != nil {
 			return err
