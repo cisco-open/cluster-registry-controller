@@ -74,5 +74,5 @@ jobs:
       - name: Run unit tests
         run: make test
 
-      - name: Run fmt, vet, build
-        run: make manager
+      - name: Run build
+        run: make binary
