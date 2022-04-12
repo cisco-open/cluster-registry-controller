@@ -74,5 +74,8 @@ jobs:
       - name: Run unit tests
         run: make test
 
+      - name: Run lint
+        run: make lint
+
       - name: Run build
         run: make binary
