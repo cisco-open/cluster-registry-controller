@@ -11,10 +11,6 @@ ENV GOPRIVATE='github.com/cisco-open,github.com/banzaicloud'
 ENV GONOPROXY='gopkg.in,go.uber.org'
 ENV GOFLAGS="-mod=readonly"
 
-
-
-ENV GOFLAGS="-mod=readonly"
-
 WORKDIR /workspace/
 
 # Copy the Go Modules manifests
