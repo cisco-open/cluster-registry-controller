@@ -20,7 +20,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: ghcr.io/username/app
+          images: ghcr.io/cisco-open/cluster-registry-controller
           tags: type=semver,pattern={{version}}
       -
         name: Set up Docker Buildx
