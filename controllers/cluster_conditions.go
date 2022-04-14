@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 
-	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
+	clusterregistryv1alpha1 "github.com/cisco-open/cluster-registry-controller/api/v1alpha1"
 )
 
 type ClusterConditionsMap map[clusterregistryv1alpha1.ClusterConditionType]clusterregistryv1alpha1.ClusterCondition

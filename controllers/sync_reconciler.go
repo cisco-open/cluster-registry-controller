@@ -34,11 +34,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	"github.com/banzaicloud/k8s-objectmatcher/patch"
 	"github.com/banzaicloud/operator-tools/pkg/reconciler"
 	"github.com/banzaicloud/operator-tools/pkg/resources"
 	operatortoolstypes "github.com/banzaicloud/operator-tools/pkg/types"
+	clusterregistryv1alpha1 "github.com/cisco-open/cluster-registry-controller/api/v1alpha1"
 	"github.com/cisco-open/cluster-registry-controller/pkg/clusters"
 	"github.com/cisco-open/cluster-registry-controller/pkg/util"
 )
@@ -497,6 +497,9 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 		obj.GetObjectKind().SetGroupVersionKind(gvk)
 	}
 
+	// TODO: make these annotations as parameters, which can be specified
+	// by users, that way other annotations can be used as well and we can
+	// get rid of banzai specific annotations from the code
 	delete(objAnnotations, operatortoolstypes.BanzaiCloudManagedComponent)
 	delete(objAnnotations, operatortoolstypes.BanzaiCloudRelatedTo)
 	delete(objAnnotations, patch.LastAppliedConfig)

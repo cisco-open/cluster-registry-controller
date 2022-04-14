@@ -1,10 +1,13 @@
 domain: k8s.cisco.com
-repo: github.com/banzaicloud/cluster-registry
+repo: github.com/cisco-open/cluster-registry-controller
 resources:
 - group: clusterregistry
   kind: Cluster
   version: v1alpha1
 - group: clusterregistry
   kind: ResourceSyncRule
+  version: v1alpha1
+- group: clusterregistry
+  kind: ClusterFeature
   version: v1alpha1
 version: "2"

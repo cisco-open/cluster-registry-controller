@@ -24,8 +24,6 @@
 <!-- Place an '[x]' (no spaces) in all applicable fields. Please remove unrelated fields. -->
 
 - [ ] Implementation tested
-- [ ] Error handling code meets the [guideline](https://github.com/banzaicloud/pipeline/blob/master/docs/error-handling-guide.md)
-- [ ] Logging code meets the guideline
 - [ ] User guide and development docs updated (if needed)
 
 ### To Do

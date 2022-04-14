@@ -1,0 +1,16 @@
+apiVersion: clusterregistry.k8s.cisco.com/v1alpha1
+kind: Cluster
+metadata:
+  name: local-cluster
+spec:
+  # clusterID of kube-system namespace
+  clusterID: 995ba61b-0073-4e42-89e2-18282b1801ac
+  # secret reference for access credentails (kubeconfig)
+  authInfo:
+    secretRef:
+      name: "local-cluster"
+      namespace: "cluster-registry"
+  # specific apiserver endpoint overrides
+  kubernetesApiEndpoints:
+  - serverAddress: 192.168.100.1:443
+    clientNetwork: privatenet
