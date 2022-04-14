@@ -1,0 +1,19 @@
+apiVersion: clusterregistry.k8s.cisco.com/v1alpha1
+kind: ResourceSyncRule
+metadata:
+  annotations:
+    # disable syncing this ResourceSyncRule resource itself to all clusters
+    cluster-registry.k8s.cisco.com/resource-sync-disabled: "true"
+  name: test-secret-sink
+spec:
+  clusterFeatureMatch:
+  # only sync from clusters where a ClusterFeature is present with this featurename
+  - featureName: test-secret-feature
+  groupVersionKind:
+    kind: Secret
+    version: v1
+  rules:
+  - match:
+    - objectKey:
+        name: test-secret
+        namespace: cluster-registry

@@ -3,10 +3,19 @@
 The cluster registry controller helps to form a group of Kubernetes clusters and synchronize
 any k8s resources across those clusters arbitrarily.
 
-## Overview
+## Cluster Registry API
 
-This repo contains the Kubernetes controller implementation for the
-[Cluster Registry API](https://github.com/banzaicloud/cluster-registry).
+The `api` directory defines a lightweight Kubernetes Custom Resource Definition API
+for defining a list of clusters and associated metadata in a K8s environment.
+
+## Defined CRDs
+
+1. `Cluster`: defines a Kubernetes cluster.
+2. `ResourceSyncRule`: defines a sync rule based on which Kubernetes resources are synced across clusters.
+3. `ClusterFeature`: defines a feature name, which can be used by a `ResourceSyncRule` resource to define which clusters
+   to sync from a given Kubernetes resource.
+
+## Overview
 
 The `Cluster` resource represents a Kubernetes cluster.
 The cluster registry controller fills the status of the `Cluster` CR with cluster related metadata.

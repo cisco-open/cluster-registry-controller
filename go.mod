@@ -5,10 +5,10 @@ go 1.18
 require (
 	emperror.dev/errors v0.8.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/banzaicloud/cluster-registry v0.0.7
 	github.com/banzaicloud/k8s-objectmatcher v1.8.0
 	github.com/banzaicloud/operator-tools v0.24.1-0.20210917222015-90c6c0b3cffe
 	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/cisco-open/cluster-registry-controller/api v0.0.1
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-logr/logr v0.4.0
 	github.com/go-logr/zapr v0.4.0 // indirect
@@ -72,9 +72,9 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.0.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/tidwall/gjson v1.6.8 // indirect
-	github.com/tidwall/match v1.0.3 // indirect
-	github.com/tidwall/pretty v1.0.2 // indirect
+	github.com/tidwall/gjson v1.9.3 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/wayneashleyberry/terminal-dimensions v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
@@ -99,3 +99,5 @@ require (
 	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 )
+
+replace github.com/cisco-open/cluster-registry-controller/api => ./api

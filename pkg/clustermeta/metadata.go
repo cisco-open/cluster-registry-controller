@@ -9,7 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/banzaicloud/cluster-registry/api/v1alpha1"
+	"github.com/cisco-open/cluster-registry-controller/api/v1alpha1"
 )
 
 func GetClusterMetadata(ctx context.Context, client client.Client) (v1alpha1.ClusterMetadata, error) {

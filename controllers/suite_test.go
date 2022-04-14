@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	// +kubebuilder:scaffold:imports
-	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
+	clusterregistryv1alpha1 "github.com/cisco-open/cluster-registry-controller/api/v1alpha1"
 	"github.com/cisco-open/cluster-registry-controller/controllers"
 	"github.com/cisco-open/cluster-registry-controller/internal/config"
 	"github.com/cisco-open/cluster-registry-controller/pkg/clusters"

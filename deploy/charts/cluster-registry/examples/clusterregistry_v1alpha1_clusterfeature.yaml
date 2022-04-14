@@ -1,0 +1,6 @@
+apiVersion: clusterregistry.k8s.cisco.com/v1alpha1
+kind: ClusterFeature
+metadata:
+  name: test-secret-source
+spec:
+  featureName: test-secret-feature

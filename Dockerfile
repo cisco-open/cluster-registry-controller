@@ -16,6 +16,9 @@ WORKDIR /workspace/
 # Copy the Go Modules manifests
 COPY ./go.mod /workspace/
 COPY ./go.sum /workspace/
+# Copy the API Go Modules manifests
+COPY api/go.mod api/go.mod
+COPY api/go.sum api/go.sum
 RUN if [ -n "${GITHUB_ACCESS_TOKEN}" ]; then \
       git config --global url."https://${GITHUB_ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"; \
     fi

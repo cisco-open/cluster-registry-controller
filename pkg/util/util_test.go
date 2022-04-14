@@ -10,9 +10,9 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	clusterregistryv1alpha1 "github.com/banzaicloud/cluster-registry/api/v1alpha1"
 	"github.com/banzaicloud/operator-tools/pkg/resources"
 	"github.com/banzaicloud/operator-tools/pkg/utils"
+	clusterregistryv1alpha1 "github.com/cisco-open/cluster-registry-controller/api/v1alpha1"
 	"github.com/cisco-open/cluster-registry-controller/pkg/util"
 )
 

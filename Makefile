@@ -36,6 +36,10 @@ ifeq ($(UNAME), Linux)
 	curl -L https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_linux_amd64.tar.gz | tar -zOxf - gotestsum > ./bin/gotestsum-${GOTESTSUM_VERSION} && chmod +x ./bin/gotestsum-${GOTESTSUM_VERSION}
 endif
 
+.PHONY: manifests
+manifests: ensure-tools ## Generate manifests
+	cd api/v1alpha1 && ${REPO_ROOT}/bin/controller-gen $(CRD_OPTIONS) object:headerFile="${REPO_ROOT}/hack/boilerplate.go.txt" paths="./..." output:crd:artifacts:config=${REPO_ROOT}/deploy/charts/cluster-registry/crds
+
 .PHONY: test
 test: bin/gotestsum ensure-tools fmt vet # Run tests
 	KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true KUBEBUILDER_ASSETS="$${PWD}/bin/${KUBEBUILDER_ASSETS_BINARY_DIR}" bin/gotestsum ./... -coverprofile cover.out

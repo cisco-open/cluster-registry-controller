@@ -71,6 +71,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }} # Note: this is required for licensei auth in steps to avoid rate-limiting.
         run: make license-check
 
+      - name: Generate manifests
+        run: make manifests
+
       - name: Run unit tests
         run: make test
 

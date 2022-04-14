@@ -1,7 +1,0 @@
----
-apiVersion: clusterregistry.k8s.cisco.com/v1alpha1
-kind: Cluster
-metadata:
-  name: cluster-1
-spec:
-  clusterID: d51418e7-547e-468b-adbc-9c2968389184
