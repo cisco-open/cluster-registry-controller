@@ -1,7 +1,7 @@
 # Cluster registry controller
 
 The cluster registry controller helps to form a group of Kubernetes clusters and synchronize
-any k8s resources across those clusters arbitrarily.
+any K8s resources across those clusters arbitrarily.
 
 ## Cluster Registry API
 
