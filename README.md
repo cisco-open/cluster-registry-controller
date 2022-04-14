@@ -18,7 +18,7 @@ for defining a list of clusters and associated metadata in a K8s environment.
 ## Overview
 
 The `Cluster` resource represents a Kubernetes cluster.
-The cluster registry controller fills the status of the `Cluster` CR with cluster related metadata.
+The cluster registry controller fills the status with cluster related metadata for the `Cluster` CR.
 
 The controller is mostly useful in multi-cluster scenarios.
 In this scenario, the cluster registry controller is deployed to all Kubernetes clusters.
@@ -38,6 +38,16 @@ By default, the required resources are kept in sync between all clusters.
 It can be further adjusted, from which clusters and to which clusters certain resource should be synced.
 
 The cluster registry controller works in a fully-distributed topology, there is no leader or single point of failure in the system.
+
+## Networking requirements
+
+The cluster registry controller instances running on the clusters must be able to reach the API server of every other
+cluster in the cluster group, so every cluster can read the relevant resources from the other clusters.
+
+The cluster registry controller pod connects directly to Kubernetes API server of the peer clusters.
+This works automatically, if the API servers are publicly available.
+Otherwise, configure a reachable endpoint for them in the [Cluster CR spec](https://github.com/cisco-open/cluster-registry-controller/blob/master/api/v1alpha1/cluster_types.go#L60-L63).
+(For security reasons, we recommend making the API server addresses available only from the IP ranges of the peer clusters.)
 
 ## Quickstart
 
