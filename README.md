@@ -90,7 +90,7 @@ Otherwise, configure a reachable endpoint for them in the [Cluster CR spec](http
     `<FIRST-CLUSTER-NAME>` should be peer.
     
     > The type in the Cluster status is determined by the clusterID field in the Cluster spec and by the 
-    > `kube-system` namespace uid. If they match, the cluster is local, otherwise it is a peer cluster.
+      `kube-system` namespace uid. If they match, the cluster is local, otherwise it is a peer cluster.
 
 The cluster group is successfully formed at this point.
 
@@ -202,7 +202,7 @@ of them). To do that, you must create a `ClusterFeature` resource on the cluster
     This causes that the secret will only be synced from clusters where there are `ClusterFeature` resources defined.
 
     > At this point, there is no `ClusterFeature` present on any cluster, so if the secret would be deleted now from 
-    > the first cluster, it would not be recreated.
+      the first cluster, it would not be recreated.
 
 2. Apply the following `ClusterFeature` to the third cluster:
 
