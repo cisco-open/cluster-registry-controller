@@ -31,10 +31,30 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /manager
+          args:
+          {{- if .Values.webhooks.clusterValidator.enabled }}
+            - "--cluster-validator-webhook-enabled={{ .Values.webhooks.clusterValidator.enabled }}"
+          {{- end }}
+          {{- if and (.Values.webhooks.clusterValidator.enabled) (.Values.webhooks.clusterValidator.nameSuffix) }}
+            - "--cluster-validator-webhook-name={{ include "cluster-registry-controller.fullname" . }}-{{ .Values.webhooks.clusterValidator.nameSuffix }}"
+          {{- end }}
+          {{- if and (.Values.webhooks.clusterValidator.enabled) (.Values.webhooks.clusterValidator.port) }}
+            - "--cluster-validator-webhook-port={{ .Values.webhooks.clusterValidator.port }}"
+          {{- end }}
+          {{- if and (.Values.webhooks.clusterValidator.enabled) (.Values.webhooks.clusterValidator.certificateDirectory) }}
+            - "--cluster-validator-webhook-certificate-directory={{ .Values.webhooks.clusterValidator.certificateDirectory }}"
+          {{- end }}
           ports:
             - name: metrics
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          {{- if and (.Values.webhooks.clusterValidator.enabled) (.Values.webhooks.clusterValidator.port) }}
+            - containerPort: {{ .Values.webhooks.clusterValidator.port }}
+              name: http-cl-val-wh
+              protocol: TCP
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /metrics
