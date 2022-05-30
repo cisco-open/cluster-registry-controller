@@ -116,6 +116,18 @@ func initConfiguration(v *viper.Viper, p *flag.FlagSet) {
 	p.Bool("core-resources-source-enabled", true, "Whether to act as a source for core cluster api resources")
 	_ = viper.BindPFlag("core-resources-source-enabled", p.Lookup("core-resources-source-enabled"))
 
+	p.Bool("cluster-validator-webhook-enabled", true, "Switch to enable the cluster validator webhook functionality.")
+	_ = viper.BindPFlag("cluster-validator-webhook.enabled", p.Lookup("cluster-validator-webhook-enabled"))
+
+	p.String("cluster-validator-webhook-name", "cluster-validator-webhook", "Name of the cluster CR validator webhook resource.")
+	_ = viper.BindPFlag("cluster-validator-webhook.name", p.Lookup("cluster-validator-webhook-name"))
+
+	p.Uint("cluster-validator-webhook-port", 9443, "Port the cluster CR validator webhook serves on.")
+	_ = viper.BindPFlag("cluster-validator-webhook.port", p.Lookup("cluster-validator-webhook-port"))
+
+	p.String("cluster-validator-webhook-certificate-directory", "/tmp/webhooks/clusterValidator/certificates", "Path of the directory to store the certificates at.")
+	_ = viper.BindPFlag("cluster-validator-webhook.certificate-directory", p.Lookup("cluster-validator-webhook-certificate-directory"))
+
 	v.SetDefault("syncController.workerCount", 1)
 	v.SetDefault("syncController.rateLimit.maxKeys", 1024)
 	v.SetDefault("syncController.rateLimit.maxRatePerSecond", 5)

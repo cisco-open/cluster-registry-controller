@@ -26,15 +26,19 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/banzaicloud/operator-tools/pkg/logger"
+
 	// +kubebuilder:scaffold:imports
 	clusterregistryv1alpha1 "github.com/cisco-open/cluster-registry-controller/api/v1alpha1"
 	"github.com/cisco-open/cluster-registry-controller/controllers"
 	"github.com/cisco-open/cluster-registry-controller/internal/config"
+	"github.com/cisco-open/cluster-registry-controller/pkg/cert"
 	"github.com/cisco-open/cluster-registry-controller/pkg/clusters"
 	"github.com/cisco-open/cluster-registry-controller/pkg/signals"
 	"github.com/cisco-open/cluster-registry-controller/pkg/util"
+	"github.com/cisco-open/cluster-registry-controller/pkg/webhooks"
 )
 
 var (
@@ -88,10 +92,47 @@ func main() {
 		LeaderElection:          configuration.LeaderElection.Enabled,
 		LeaderElectionID:        configuration.LeaderElection.Name,
 		LeaderElectionNamespace: configuration.LeaderElection.Namespace,
-		Port:                    0,
+		CertDir:                 configuration.ClusterValidatorWebhook.CertificateDirectory,
+		Port:                    int(configuration.ClusterValidatorWebhook.Port),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	clusterValidatorLogger := ctrl.Log.WithName("cluster-validator")
+
+	mgr.GetWebhookServer().Register(
+		"/validate-cluster",
+		&webhook.Admission{
+			Handler: webhooks.NewClusterValidator(clusterValidatorLogger, mgr),
+		},
+	)
+
+	clusterValidatorCertRenewer, err := cert.NewRenewer(
+		clusterValidatorLogger,
+		nil,
+		configuration.ClusterValidatorWebhook.CertificateDirectory,
+		true,
+	)
+	if err != nil {
+		setupLog.Error(err, "initializing certificate renewer failed")
+
+		os.Exit(1)
+	}
+
+	err = mgr.Add(
+		cert.NewWebhookCertifier(
+			clusterValidatorLogger,
+			configuration.ClusterValidatorWebhook.Name,
+			configuration.Namespace,
+			mgr,
+			clusterValidatorCertRenewer,
+		),
+	)
+	if err != nil {
+		setupLog.Error(err, "adding certificate provisioner to manager failed")
+
 		os.Exit(1)
 	}
 
