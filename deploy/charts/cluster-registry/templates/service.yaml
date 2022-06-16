@@ -12,5 +12,11 @@ spec:
       targetPort: metrics
       protocol: TCP
       name: http-metrics
+    {{- if .Values.webhooks.clusterValidator.enabled }}
+    - port: 443
+      targetPort: http-cl-val-wh
+      protocol: TCP
+      name: http-cl-val-wh
+    {{- end }}
   selector:
     {{- include "cluster-registry-controller.selectorLabels" . | nindent 4 }}

@@ -59,3 +59,20 @@ controller:
     name: "default"
   coreResourceSource:
     enabled: true
+
+webhooks:
+  # clusterValidator is a validation admission webhook for cluster custom
+  # resources.
+  clusterValidator:
+    # Enabled is the switch for turning the webhook on or off.
+    enabled: true
+
+    # CertificateDirectory is the path storing the certificate files.
+    certificateDirectory: /tmp/webhooks/clusterValidator/certificates
+
+    # Name is the suffix for the webhook's identifier. The controller's name
+    # will be prepended to this value with a dash.
+    nameSuffix: cluster-validator-webhook
+
+    # Port is the port number on which the webhook is served in the container.
+    port: 9443

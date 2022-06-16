@@ -27,6 +27,26 @@ type Configuration struct {
 	NetworkName                string            `mapstructure:"network-name" json:"networkName,omitempty"`
 	APIServerEndpointAddress   string            `mapstructure:"apiserver-endpoint-address" json:"apiServerEndpointAddress,omitempty"`
 	CoreResourcesSourceEnabled bool              `mapstructure:"core-resources-source-enabled" json:"coreResourcesSourceEnabled,omitempty"`
+
+	// ClusterValidatorWebhook configures the cluster CR validator webhook for
+	// the operator.
+	ClusterValidatorWebhook ClusterValidatorWebhook `mapstructure:"cluster-validator-webhook" json:"clusterValidatorWebhook"`
+}
+
+// ClusterValidatorWebhook describes the configuration options for the cluster
+// CR validator webhook.
+type ClusterValidatorWebhook struct {
+	// Enabled is the indicator to determine whether the webhook is enabled.
+	Enabled bool `mapstructure:"enabled" json:"enabled,omitempty"`
+
+	// Certificate directory is the directory where the cluster CR validator webhook stores its certificates locally.
+	CertificateDirectory string `mapstructure:"certificate-directory" json:"certificateDirectory,omitempty"`
+
+	// Name is the name of the cluster CR validator webhook resource.
+	Name string `mapstructure:"name" json:"name,omitempty"`
+
+	// Port is the port the cluster CR validator webhook serves on.
+	Port uint `mapstructure:"port" json:"port,omitempty"`
 }
 
 type ClusterController struct {
