@@ -86,68 +86,66 @@ func main() {
 		}
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	options := ctrl.Options{
 		Scheme:                  scheme,
 		MetricsBindAddress:      configuration.MetricsAddr,
 		LeaderElection:          configuration.LeaderElection.Enabled,
 		LeaderElectionID:        configuration.LeaderElection.Name,
 		LeaderElectionNamespace: configuration.LeaderElection.Namespace,
-		CertDir:                 configuration.ClusterValidatorWebhook.CertificateDirectory,
-		Port:                    int(configuration.ClusterValidatorWebhook.Port),
-	})
+	}
+
+	if configuration.ClusterValidatorWebhook.Enabled {
+		options.CertDir = configuration.ClusterValidatorWebhook.CertificateDirectory
+		options.Port = int(configuration.ClusterValidatorWebhook.Port)
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
-	clusterValidatorLogger := ctrl.Log.WithName("cluster-validator")
+	if configuration.ClusterValidatorWebhook.Enabled {
+		clusterValidatorLogger := ctrl.Log.WithName("cluster-validator")
 
-	mgr.GetWebhookServer().Register(
-		"/validate-cluster",
-		&webhook.Admission{
-			Handler: webhooks.NewClusterValidator(clusterValidatorLogger, mgr),
-		},
-	)
+		mgr.GetWebhookServer().Register(
+			"/validate-cluster",
+			&webhook.Admission{
+				Handler: webhooks.NewClusterValidator(clusterValidatorLogger, mgr),
+			},
+		)
 
-	clusterValidatorCertRenewer, err := cert.NewRenewer(
-		clusterValidatorLogger,
-		nil,
-		configuration.ClusterValidatorWebhook.CertificateDirectory,
-		true,
-	)
-	if err != nil {
-		setupLog.Error(err, "initializing certificate renewer failed")
-
-		os.Exit(1)
-	}
-
-	err = mgr.Add(
-		cert.NewWebhookCertifier(
+		clusterValidatorCertRenewer, err := cert.NewRenewer(
 			clusterValidatorLogger,
-			configuration.ClusterValidatorWebhook.Name,
-			configuration.Namespace,
-			mgr,
-			clusterValidatorCertRenewer,
-		),
-	)
-	if err != nil {
-		setupLog.Error(err, "adding certificate provisioner to manager failed")
+			nil,
+			configuration.ClusterValidatorWebhook.CertificateDirectory,
+			true,
+		)
+		if err != nil {
+			setupLog.Error(err, "initializing certificate renewer failed")
 
-		os.Exit(1)
+			os.Exit(1)
+		}
+
+		err = mgr.Add(
+			cert.NewWebhookCertifier(
+				clusterValidatorLogger,
+				configuration.ClusterValidatorWebhook.Name,
+				configuration.Namespace,
+				mgr,
+				clusterValidatorCertRenewer,
+			),
+		)
+		if err != nil {
+			setupLog.Error(err, "adding certificate provisioner to manager failed")
+
+			os.Exit(1)
+		}
 	}
 
 	ctx := signals.NotifyContext(context.Background())
 
 	clustersManager := clusters.NewManager(ctx)
-
-	// // sync rule for cluster resources
-	// AddClustersSyncRule(clustersManager, mgr, ctrl.Log, config.Configuration(configuration))
-
-	// // sync rule for cluster secrets
-	// AddClusterSecretsSyncRule(clustersManager, mgr, ctrl.Log, config.Configuration(configuration))
-
-	// // sync rule for sync rules
-	// AddResourceSyncRuleSyncRule(clustersManager, mgr, ctrl.Log, config.Configuration(configuration))
 
 	if err = controllers.NewResourceSyncRuleReconciler("resource-sync-rules", ctrl.Log.WithName("controllers").WithName("resource-sync-rule"), clustersManager, config.Configuration(configuration)).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "resource-sync-rule")

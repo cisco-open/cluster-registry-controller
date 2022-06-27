@@ -34,9 +34,7 @@ spec:
           command:
             - /manager
           args:
-          {{- if .Values.webhooks.clusterValidator.enabled }}
-            - "--cluster-validator-webhook-enabled={{ .Values.webhooks.clusterValidator.enabled }}"
-          {{- end }}
+            - "--cluster-validator-webhook-enabled={{ .Values.webhooks.clusterValidator.enabled  }}"
           {{- if and (.Values.webhooks.clusterValidator.enabled) (.Values.webhooks.clusterValidator.nameSuffix) }}
             - "--cluster-validator-webhook-name={{ include "cluster-registry-controller.fullname" . }}-{{ .Values.webhooks.clusterValidator.nameSuffix }}"
           {{- end }}

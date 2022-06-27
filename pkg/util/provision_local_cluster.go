@@ -19,6 +19,7 @@ import (
 
 	"emperror.dev/errors"
 	"github.com/go-logr/logr"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -40,6 +41,24 @@ func ProvisionLocalClusterObject(c client.Client, log logr.Logger, configuration
 		log.Info("local cluster object already exists, skipping provisioning", "cluster_name", configuration.ProvisionLocalCluster)
 
 		return nil
+	}
+
+	if configuration.ClusterValidatorWebhook.Enabled {
+		webhook := &admissionregistrationv1.ValidatingWebhookConfiguration{}
+		err := c.Get(context.Background(), types.NamespacedName{
+			Name: configuration.ClusterValidatorWebhook.Name,
+		}, webhook)
+		if err != nil {
+			return errors.WrapIf(err, "could not get validating webhook configuration")
+		}
+		ignore := admissionregistrationv1.Ignore
+		for i := range webhook.Webhooks {
+			webhook.Webhooks[i].FailurePolicy = &ignore
+		}
+		err = c.Update(context.Background(), webhook)
+		if err != nil {
+			return errors.WrapIf(err, "could not update validating webhook configuration")
+		}
 	}
 
 	newClusterSpec, err := NewLocalCluster(c, configuration.Namespace, configuration.ProvisionLocalCluster, configuration.APIServerEndpointAddress)

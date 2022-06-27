@@ -24,3 +24,5 @@ bin
 *~
 
 /.licensei.cache
+
+.vscode
