@@ -4,10 +4,10 @@ description: Cluster registry controller for K8s
 home: https://eti.cisco.com/
 
 maintainers:
-- email: ciscoeti@cisco.com
-  name: Cisco
+  - email: ciscoeti@cisco.com
+    name: Cisco
 sources:
-- https://github.com/cisco-open/cluster-registry-controller
+  - https://github.com/cisco-open/cluster-registry-controller
 
-version: 0.2.0
-appVersion: v0.2.0
+version: 0.2.1
+appVersion: v0.2.1

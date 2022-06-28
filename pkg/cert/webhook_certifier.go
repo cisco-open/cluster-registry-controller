@@ -99,14 +99,17 @@ func (certifier *WebhookCertifier) Start(ctx context.Context) error {
 	certifier.certificateRenewer.WithDNSNames(certifier.dnsNames()...)
 
 	certifier.certificateRenewer.WithAfterCheckFunctions(func(c *Certificate, needsUpdate bool) error {
+		failPolicy := admissionregistrationv1.Fail
 		switch {
 		case certifier.mutatingWebhookConfiguration != nil:
 			for index, webhook := range certifier.mutatingWebhookConfiguration.Webhooks {
+				webhook.FailurePolicy = &failPolicy
 				webhook.ClientConfig.CABundle = c.CACertificate
 				certifier.mutatingWebhookConfiguration.Webhooks[index] = webhook
 			}
 		case certifier.validatingWebhookConfiguration != nil:
 			for index, webhook := range certifier.validatingWebhookConfiguration.Webhooks {
+				webhook.FailurePolicy = &failPolicy
 				webhook.ClientConfig.CABundle = c.CACertificate
 				certifier.validatingWebhookConfiguration.Webhooks[index] = webhook
 			}

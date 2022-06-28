@@ -67,7 +67,7 @@ type Certificate struct {
 func NewCertificate(dnsNames []string) (*Certificate, error) {
 	certificate := new(Certificate)
 
-	caPrivateKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	caPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating CA private key failed")
 	}
