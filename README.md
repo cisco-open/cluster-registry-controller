@@ -56,7 +56,7 @@ Otherwise, configure a reachable endpoint for them in the [Cluster CR spec](http
 1. Install cluster registry controller on the first cluster. The following command installs the cluster registry controller on your cluster, creates a Cluster CR with the name `FIRST-CLUSTER-NAME`, and it also creates a secret that holds a Kubeconfig with read access to this cluster.
 
     ```
-    helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=<FIRST-CLUSTER-NAME>
+    helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=<FIRST-CLUSTER-NAME> --kube-context <FIRST-CLUSTER-CONTEXT>
     ```
 
     > Tip: Use the `--set apiServerEndpointAddress=<PUBLIC-API-SERVER-ADDRESS>` flag, if your Kubernetes cluster API returns private ip for the api server.
@@ -64,21 +64,23 @@ Otherwise, configure a reachable endpoint for them in the [Cluster CR spec](http
 2. Install cluster registry controller on the second cluster. This command installs the cluster registry controller on your cluster, creates a Cluster CR with the name `SECOND-CLUSTER-NAME`, and it also creates a secret that holds a Kubeconfig with read access to this cluster.
 
     ```
-    helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=<SECOND-CLUSTER-NAME>
+    helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=<SECOND-CLUSTER-NAME> --kube-context <SECOND-CLUSTER-CONTEXT>
     ```
 
 3. Copy/paste Cluster and secret resources from first->second and second->first cluster. The secret is needed so that the cluster registry controller of one cluster can read from the other cluster.
 
     From first cluster to second cluster:
     ```
-    kubectl get cluster <FIRST-CLUSTER-NAME> -o yaml | pbcopy      pbpaste | kubectl apply -f -
-    kubectl get secret <FIRST-CLUSTER-NAME> -o yaml | pbcopy       pbpaste | kubectl apply -f -
+    kubectl get cluster <FIRST-CLUSTER-NAME> --context <FIRST-CLUSTER-CONTEXT> -o yaml | pbcopy && pbpaste | kubectl apply --context <SECOND-CLUSTER-CONTEXT> -f -
+
+    kubectl get secret -n cluster-registry <FIRST-CLUSTER-NAME> --context <FIRST-CLUSTER-CONTEXT> -o yaml | pbcopy && pbpaste | kubectl apply --context <SECOND-CLUSTER-CONTEXT> -f -
     ```
 
     From second cluster to first cluster:
     ```
-    kubectl get cluster <SECOND-CLUSTER-NAME> -o yaml | pbcopy    pbpaste | kubectl apply -f -
-    kubectl get secret <SECOND-CLUSTER-NAME> -o yaml | pbcopy     pbpaste | kubectl apply -f -
+    kubectl get cluster <SECOND-CLUSTER-NAME> --context <SECOND-CLUSTER-CONTEXT> -o yaml | pbcopy && pbpaste | kubectl apply --context <FIRST-CLUSTER-CONTEXT> -f -
+
+    kubectl get secret -n cluster-registry <SECOND-CLUSTER-NAME> --context <SECOND-CLUSTER-CONTEXT> -o yaml | pbcopy && pbpaste | kubectl apply --context <FIRST-CLUSTER-CONTEXT> -f -
     ```
 
 4. Check the status of the Cluster CRs. Note the following points:
@@ -102,14 +104,16 @@ The cluster group is successfully formed at this point.
 
    From first cluster to third cluster:
     ```
-    kubectl get cluster <FIRST-CLUSTER-NAME> -o yaml | pbcopy      pbpaste | kubectl apply -f -
-    kubectl get secret <FIRST-CLUSTER-NAME> -o yaml | pbcopy       pbpaste | kubectl apply -f -
+    kubectl get cluster <FIRST-CLUSTER-NAME> --context <FIRST-CLUSTER-CONTEXT> -o yaml | pbcopy && pbpaste | kubectl apply --context <THIRD-CLUSTER-CONTEXT> -f -
+
+    kubectl get secret -n cluster-registry <FIRST-CLUSTER-NAME> --context <FIRST-CLUSTER-CONTEXT> -o yaml | pbcopy && pbpaste | kubectl apply --context <THIRD-CLUSTER-CONTEXT> -f -
     ```
 
    From third cluster to first cluster:
     ```
-    kubectl get cluster <THIRD-CLUSTER-NAME> -o yaml | pbcopy    pbpaste | kubectl apply -f -
-    kubectl get secret <THIRD-CLUSTER-NAME> -o yaml | pbcopy     pbpaste | kubectl apply -f -
+    kubectl get cluster <THIRD-CLUSTER-NAME> --context <THIRD-CLUSTER-CONTEXT> -o yaml | pbcopy && pbpaste | kubectl apply --context <FIRST-CLUSTER-CONTEXT> -f -
+    
+    kubectl get secret -n cluster-registry <THIRD-CLUSTER-NAME> --context <THIRD-CLUSTER-CONTEXT> -o yaml | pbcopy && pbpaste | kubectl apply --context <FIRST-CLUSTER-CONTEXT> -f -
     ```
    
     **You don't need to do the Cluster and secret resource swap between the new cluster and 
@@ -137,6 +141,7 @@ The cluster group is successfully formed at this point.
     kind: Secret
     metadata:
       name: test-secret
+      namespace: cluster-registry
     data: {}
     ````
 
@@ -154,8 +159,8 @@ The cluster group is successfully formed at this point.
       rules:
       - match:
         - objectKey:
-          name: test-secret
-          namespace: cluster-registry
+            name: test-secret
+            namespace: cluster-registry
     ```
    
     This `ResourceSyncRule` resource itself and the `secret` resource as well should appear shortly on all 
