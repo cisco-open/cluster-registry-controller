@@ -15,9 +15,12 @@
 package util
 
 import (
-	"bytes"
 	"context"
+	v1 "k8s.io/api/authentication/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/utils/pointer"
 	"net"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"emperror.dev/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -61,11 +64,31 @@ func GetReaderSecretForCluster(ctx context.Context, kubeClient client.Client, ku
 		return nil, errors.WithStackIf(err)
 	}
 
+	saToken := ""
 	if len(sa.Secrets) == 0 {
-		return nil, errors.NewWithDetails("could not find secret reference for sa", "sa", saRef)
+		// TODO: k8s 1.24+ only
+		if true {
+			k8sClient, _ := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
+			serviceAccounts := k8sClient.CoreV1().ServiceAccounts("cluster-registry")
+
+			var req = v1.TokenRequest{
+				Spec: v1.TokenRequestSpec{
+					ExpirationSeconds: pointer.Int64(60 * 60 * 24 * 365),
+				},
+			}
+			// TODO: Add RBAC roles
+			token, err := serviceAccounts.CreateToken(context.Background(), "cluster-registry-controller-reader", &req, metav1.CreateOptions{})
+			if err != nil {
+				return nil, errors.New("token request failed")
+			}
+
+			saToken = token.Status.Token
+		}
+
+		//return nil, errors.NewWithDetails("could not find secret reference for sa", "sa", saRef)
 	}
 
-	secret := &corev1.Secret{}
+	/*secret := &corev1.Secret{}
 	err = kubeClient.Get(ctx, types.NamespacedName{
 		Name:      sa.Secrets[0].Name,
 		Namespace: sa.GetNamespace(),
@@ -77,13 +100,14 @@ func GetReaderSecretForCluster(ctx context.Context, kubeClient client.Client, ku
 	caData := secret.Data["ca.crt"]
 	if !bytes.Contains(caData, kubeConfig.CAData) {
 		caData = append(append(caData, []byte("\n")...), kubeConfig.CAData...)
-	}
+	}*/
 
 	// add overrides specified in the cluster resource without network specified
 	endpoint := GetEndpointForClusterByNetwork(cluster, "")
 	if endpoint.ServerAddress != "" {
 		apiServerEndpointAddress = endpoint.ServerAddress
 	}
+	caData := kubeConfig.CAData
 	if len(endpoint.CABundle) > 0 {
 		caData = append(append(caData, []byte("\n")...), endpoint.CABundle...)
 	}
@@ -98,7 +122,7 @@ func GetReaderSecretForCluster(ctx context.Context, kubeClient client.Client, ku
 		apiServerEndpointAddress = kubeConfig.Host
 	}
 
-	kubeconfig, err := GetKubeconfigWithSAToken(cluster.GetName(), sa.GetName(), apiServerEndpointAddress, caData, string(secret.Data["token"]))
+	kubeconfig, err := GetKubeconfigWithSAToken(cluster.GetName(), sa.GetName(), apiServerEndpointAddress, caData, saToken)
 	if err != nil {
 		return nil, errors.WithStackIf(err)
 	}
