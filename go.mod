@@ -28,6 +28,11 @@ require (
 )
 
 require (
+	github.com/Masterminds/semver/v3 v3.1.1
+	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471
+)
+
+require (
 	cloud.google.com/go v0.54.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
@@ -96,7 +101,6 @@ require (
 	k8s.io/component-base v0.21.3 // indirect
 	k8s.io/klog/v2 v2.8.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7 // indirect
-	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 )
 
