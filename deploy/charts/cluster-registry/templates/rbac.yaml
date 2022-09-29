@@ -46,11 +46,6 @@ rules:
   - patch
 - apiGroups: [""]
   resources:
-  - serviceaccounts/token
-  verbs:
-  - create
-- apiGroups: [""]
-  resources:
   - events
   verbs:
   - get
