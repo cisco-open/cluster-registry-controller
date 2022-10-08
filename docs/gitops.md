@@ -1,5 +1,6 @@
-# GitOps
-This guide details how to set up a GitOps based development environment for multi-cluster cluster-registry applications. This is the high level architecture for Argo CD that will be demonstrated in this guide.
+# Multi-cluster cluster-registry - The GitOps way
+This guide details how to set up a GitOps based development environment for multi-cluster cluster-registry applications. This development set-up stores the secrets natively in the git repository, for production it is highly recommended to use one of the [ArgoCD Secret Management solution](https://argo-cd.readthedocs.io/en/stable/operator-manual/secret-management/) 
+This is the high level architecture for Argo CD that will be demonstrated in this guide.
 
 ![GitOps architecture](img/final-arch.jpg)
 
@@ -115,7 +116,12 @@ stringData:
     }
 ```
 ## Patch ArgoCD configuration
-We need to patch the ArgoCD configuration for working some feature like App of Apps pattern, ignore diffs...
+Patch the ArgoCD configuration for App of Apps health check and ignoring diffs of controller/operator managed fields. Read more about patches on the 
+
+[ArgoCD - Resource Health](https://argo-cd.readthedocs.io/en/stable/operator-manual/health/) 
+
+[ArgoCD - Diffing Customization](https://argo-cd.readthedocs.io/en/stable/user-guide/diffing/)
+
 ```yaml
 # argocd-app-patch-cm.yaml
 apiVersion: v1
@@ -379,7 +385,7 @@ spec:
       - PruneLast=true
       - CreateNamespace=true
 ```
-## Instal cluster-registry applications with ArgoCD
+## Install cluster-registry applications with ArgoCD
 We have all the parts that need to install the cluster-registry applications on our three kubernetes clusters. This picture shows the current status.
 
 ![GitOps architecture](img/clean-k8s-arch.jpg)
@@ -409,7 +415,7 @@ Three independent cluster-registry app are installed on three cluster, but they 
 ![GitOps architecture](img/installed-cr.jpg)
 
 ## Build trust between cluster-registry applications
-To create trust between each cluster-registry, we need to share the Cluster CR and Secret CR along them. 
+To create trust between each cluster-registry, we need to share the Cluster CR and Secret CR among them. 
 ```bash
 # check Cluster and Secret CR of cluster-registry-1
 kubectl --context argocd-cluster-1 get cluster -o wide
@@ -455,7 +461,7 @@ git commit -m "update cluster secrets"
 
 git push
 ```
-## Distribute Clsuters, Secrets
+## Distribute Clusters, Secrets
 Create an ArgoCD ```ApplicationSet``` to distribute Cluster and Secret objects on each cluster.
 ```yaml
 # cluster-secrets.yaml
