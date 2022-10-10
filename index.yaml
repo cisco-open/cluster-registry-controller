@@ -2,6 +2,21 @@ apiVersion: v1
 entries:
   cluster-registry:
   - apiVersion: v1
+    appVersion: v0.2.4
+    created: "2022-10-10T14:35:35.584086406Z"
+    description: Cluster registry controller for K8s
+    digest: d711cb2fc653aa770551b61a2a5bf770a2d36a4610d34076d1ed27df513dd0cb
+    home: https://eti.cisco.com/
+    maintainers:
+    - email: ciscoeti@cisco.com
+      name: Cisco
+    name: cluster-registry
+    sources:
+    - https://github.com/cisco-open/cluster-registry-controller
+    urls:
+    - https://cisco-open.github.io/cluster-registry-controller/cluster-registry-0.2.4.tgz
+    version: 0.2.4
+  - apiVersion: v1
     appVersion: v0.2.3
     created: "2022-07-18T13:48:56.971667943Z"
     description: Cluster registry controller for K8s
@@ -91,4 +106,4 @@ entries:
     urls:
     - https://cisco-open.github.io/cluster-registry-controller/cluster-registry-0.1.8.tgz
     version: 0.1.8
-generated: "2022-07-18T13:48:56.969589821Z"
+generated: "2022-10-10T14:35:35.581736073Z"
