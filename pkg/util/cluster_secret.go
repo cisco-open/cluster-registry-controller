@@ -66,7 +66,7 @@ func GetReaderSecretForCluster(ctx context.Context, kubeClient client.Client, ku
 
 	// After K8s v1.24, Secret objects containing ServiceAccount tokens are no longer auto-generated, so we will have to manually create Secret in order to get the token.
 	// Reference: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.24.md#no-really-you-must-read-this-before-you-upgrade
-	var secretObj *corev1.Secret
+	secretObj := &corev1.Secret{}
 
 	readerSecretName := saRef.Name + "-token"
 	if len(sa.Secrets) != 0 {
