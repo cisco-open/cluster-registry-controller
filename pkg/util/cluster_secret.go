@@ -75,10 +75,10 @@ func GetReaderSecretForCluster(ctx context.Context, kubeClient client.Client, ku
 
 	secretObjRef := types.NamespacedName{
 		Namespace: saRef.Namespace,
-		Name: readerSecretName,
+		Name:      readerSecretName,
 	}
 
-	err = kubeClient.Get(ctx, secretObjRef ,secretObj)
+	err = kubeClient.Get(ctx, secretObjRef, secretObj)
 	if err != nil &&
 		k8sErrors.IsNotFound(err) {
 		readerSATokenSecret := &corev1.Secret{
