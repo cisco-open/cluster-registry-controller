@@ -58,6 +58,7 @@ func GetExternalAddressOfAPIServer(kubeConfig *rest.Config) (string, error) {
 	return "", errors.New("could not determine external apiserver address")
 }
 
+//nolint:gomnd
 var defaultBackoff = wait.Backoff{
 	Duration: time.Second * 3,
 	Factor:   1,
