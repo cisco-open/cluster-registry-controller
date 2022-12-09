@@ -19,8 +19,9 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"strings"
+
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	"emperror.dev/errors"
 	"github.com/go-logr/logr"
@@ -411,7 +412,7 @@ func (certifier *WebhookCertifier) updateCertificate() error {
 func (certifier *WebhookCertifier) WebhookCertBundleReadyzChecker() healthz.Checker {
 	return func(req *http.Request) error {
 		if !certifier.webhookCertBundleReadyz {
-			return fmt.Errorf("webhook cert bundle is not ready")
+			return errors.New("webhook cert bundle is not ready yet")
 		}
 
 		return nil
