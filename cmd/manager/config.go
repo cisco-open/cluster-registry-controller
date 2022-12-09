@@ -76,6 +76,7 @@ func initConfiguration(v *viper.Viper, p *flag.FlagSet) {
 	v.AutomaticEnv()
 
 	p.String("metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	p.String("health-addr", ":8090", "The address the health endpoint binds to.")
 	p.Bool("devel-mode", false, "Set development mode (mainly for logging).")
 	p.Bool("version", false, "Show version information")
 	p.Bool("dump-config", false, "Dump configuration to the console")

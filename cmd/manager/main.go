@@ -92,6 +92,7 @@ func main() {
 		LeaderElection:          configuration.LeaderElection.Enabled,
 		LeaderElectionID:        configuration.LeaderElection.Name,
 		LeaderElectionNamespace: configuration.LeaderElection.Namespace,
+		HealthProbeBindAddress:  configuration.HealthAddr,
 	}
 
 	if configuration.ClusterValidatorWebhook.Enabled {
@@ -105,6 +106,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	var clusterWebhookCertifier *cert.WebhookCertifier
 	if configuration.ClusterValidatorWebhook.Enabled {
 		clusterValidatorLogger := ctrl.Log.WithName("cluster-validator")
 
@@ -127,15 +129,15 @@ func main() {
 			os.Exit(1)
 		}
 
-		err = mgr.Add(
-			cert.NewWebhookCertifier(
-				clusterValidatorLogger,
-				configuration.ClusterValidatorWebhook.Name,
-				configuration.Namespace,
-				mgr,
-				clusterValidatorCertRenewer,
-			),
+		clusterWebhookCertifier = cert.NewWebhookCertifier(
+			clusterValidatorLogger,
+			configuration.ClusterValidatorWebhook.Name,
+			configuration.Namespace,
+			mgr,
+			clusterValidatorCertRenewer,
+			false,
 		)
+		err = mgr.Add(clusterWebhookCertifier)
 		if err != nil {
 			setupLog.Error(err, "adding certificate provisioner to manager failed")
 
@@ -157,6 +159,11 @@ func main() {
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
+
+	if err = mgr.AddReadyzCheck("readyz", clusterWebhookCertifier.WebhookCertBundleReadyzChecker()); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {

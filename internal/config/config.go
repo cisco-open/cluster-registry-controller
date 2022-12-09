@@ -16,6 +16,7 @@ package config
 
 type Configuration struct {
 	MetricsAddr                string            `mapstructure:"metrics-addr" json:"metricsAddr,omitempty"`
+	HealthAddr                 string            `mapstructure:"health-addr" json:"HealthAddr,omitempty"`
 	LeaderElection             LeaderElection    `mapstructure:"leader-election" json:"leaderElection,omitempty"`
 	Logging                    Logging           `mapstructure:"log" json:"logging,omitempty"`
 	ClusterController          ClusterController `mapstructure:"clusterController" json:"clusterController,omitempty"`
