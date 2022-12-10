@@ -19,6 +19,8 @@ import (
 	"os"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -106,7 +108,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	var clusterWebhookCertifier *cert.WebhookCertifier
+	// Use ping readiness if webhook is not enabled
+	readyzCheckSelector := healthz.Ping
+
 	if configuration.ClusterValidatorWebhook.Enabled {
 		clusterValidatorLogger := ctrl.Log.WithName("cluster-validator")
 
@@ -129,7 +133,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		clusterWebhookCertifier = cert.NewWebhookCertifier(
+		clusterWebhookCertifier := cert.NewWebhookCertifier(
 			clusterValidatorLogger,
 			configuration.ClusterValidatorWebhook.Name,
 			configuration.Namespace,
@@ -143,6 +147,9 @@ func main() {
 
 			os.Exit(1)
 		}
+
+		// When webhook is enabled - check if webhook certificates are updated successfully then set container ready
+		readyzCheckSelector = clusterWebhookCertifier.WebhookCertBundleReadyzChecker()
 	}
 
 	ctx := signals.NotifyContext(context.Background())
@@ -160,7 +167,7 @@ func main() {
 	}
 	// +kubebuilder:scaffold:builder
 
-	if err = mgr.AddReadyzCheck("readyz", clusterWebhookCertifier.WebhookCertBundleReadyzChecker()); err != nil {
+	if err = mgr.AddReadyzCheck("readyz", readyzCheckSelector); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
