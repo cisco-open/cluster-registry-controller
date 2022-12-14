@@ -48,6 +48,9 @@ spec:
             - name: metrics
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+            - name: health
+              containerPort: {{ .Values.health.port }}
+              protocol: TCP
           {{- if and (.Values.webhooks.clusterValidator.enabled) (.Values.webhooks.clusterValidator.port) }}
             - containerPort: {{ .Values.webhooks.clusterValidator.port }}
               name: http-cl-val-wh
@@ -59,8 +62,8 @@ spec:
               port: metrics
           readinessProbe:
             httpGet:
-              path: /metrics
-              port: metrics
+              path: /readyz
+              port: health
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:

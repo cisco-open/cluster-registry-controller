@@ -40,6 +40,9 @@ service:
   type: ClusterIP
   port: 8080
 
+health:
+  port: 8090
+
 serviceAccount:
   annotations: {}
 

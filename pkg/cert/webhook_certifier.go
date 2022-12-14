@@ -17,8 +17,11 @@ package cert
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"strings"
+
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	"emperror.dev/errors"
 	"github.com/go-logr/logr"
@@ -61,6 +64,9 @@ type WebhookCertifier struct {
 
 	// triggers is the channel to notify the certificate renewer on changes.
 	triggers chan struct{}
+
+	// webhookCertBundleReadyz is used to check readiness of cluster-registry
+	webhookCertBundleReadyz bool
 }
 
 // NewWebhookCertifier returns an object which can manage the generation and
@@ -71,17 +77,19 @@ func NewWebhookCertifier(
 	webhookNamespace string,
 	webhookManager manager.Manager,
 	certificateRenewer *Renewer,
+	webhookCertBundleReadyz bool,
 ) *WebhookCertifier {
 	return &WebhookCertifier{
 		logger: logger.WithValues("key", client.ObjectKey{
 			Namespace: webhookNamespace,
 			Name:      webhookName,
 		}),
-		webhookName:        webhookName,
-		webhookNamespace:   webhookNamespace,
-		webhookManager:     webhookManager,
-		triggers:           make(chan struct{}),
-		certificateRenewer: certificateRenewer,
+		webhookName:             webhookName,
+		webhookNamespace:        webhookNamespace,
+		webhookManager:          webhookManager,
+		triggers:                make(chan struct{}),
+		certificateRenewer:      certificateRenewer,
+		webhookCertBundleReadyz: webhookCertBundleReadyz,
 	}
 }
 
@@ -122,6 +130,7 @@ func (certifier *WebhookCertifier) Start(ctx context.Context) error {
 			if err != nil {
 				return errors.Wrap(err, "updating webhook certificate failed")
 			}
+			certifier.webhookCertBundleReadyz = true
 		}
 
 		return nil
@@ -398,4 +407,14 @@ func (certifier *WebhookCertifier) updateCertificate() error {
 	logger.Info("webhook configuration certificate updated successfully")
 
 	return nil
+}
+
+func (certifier *WebhookCertifier) WebhookCertBundleReadyzChecker() healthz.Checker {
+	return func(req *http.Request) error {
+		if !certifier.webhookCertBundleReadyz {
+			return errors.New("webhook cert bundle is not ready yet")
+		}
+
+		return nil
+	}
 }

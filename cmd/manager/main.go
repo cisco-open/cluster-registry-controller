@@ -19,6 +19,8 @@ import (
 	"os"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -92,6 +94,7 @@ func main() {
 		LeaderElection:          configuration.LeaderElection.Enabled,
 		LeaderElectionID:        configuration.LeaderElection.Name,
 		LeaderElectionNamespace: configuration.LeaderElection.Namespace,
+		HealthProbeBindAddress:  configuration.HealthAddr,
 	}
 
 	if configuration.ClusterValidatorWebhook.Enabled {
@@ -104,6 +107,9 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+
+	// Use ping readiness if webhook is not enabled
+	readyzCheckSelector := healthz.Ping
 
 	if configuration.ClusterValidatorWebhook.Enabled {
 		clusterValidatorLogger := ctrl.Log.WithName("cluster-validator")
@@ -127,20 +133,23 @@ func main() {
 			os.Exit(1)
 		}
 
-		err = mgr.Add(
-			cert.NewWebhookCertifier(
-				clusterValidatorLogger,
-				configuration.ClusterValidatorWebhook.Name,
-				configuration.Namespace,
-				mgr,
-				clusterValidatorCertRenewer,
-			),
+		clusterWebhookCertifier := cert.NewWebhookCertifier(
+			clusterValidatorLogger,
+			configuration.ClusterValidatorWebhook.Name,
+			configuration.Namespace,
+			mgr,
+			clusterValidatorCertRenewer,
+			false,
 		)
+		err = mgr.Add(clusterWebhookCertifier)
 		if err != nil {
 			setupLog.Error(err, "adding certificate provisioner to manager failed")
 
 			os.Exit(1)
 		}
+
+		// When webhook is enabled - check if webhook certificates are updated successfully then set container ready
+		readyzCheckSelector = clusterWebhookCertifier.WebhookCertBundleReadyzChecker()
 	}
 
 	ctx := signals.NotifyContext(context.Background())
@@ -157,6 +166,11 @@ func main() {
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
+
+	if err = mgr.AddReadyzCheck("readyz", readyzCheckSelector); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {
