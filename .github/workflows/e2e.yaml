@@ -84,7 +84,10 @@ jobs:
           kubectl get pods -A --kubeconfig $KUBECONFIG2
           helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=c2 --set image.repository=cluster-registry-controller --set image.tag=ci-test --kubeconfig $KUBECONFIG2
           kubectl get pods -A --kubeconfig $KUBECONFIG2
-          sleep 30
+          kubectl describe deployment -n cluster-registry cluster-registry-controller-controller --kubeconfig $KUBECONFIG1
+          kubectl describe deployment -n cluster-registry cluster-registry-controller-controller --kubeconfig $KUBECONFIG2
+          kubectl wait pods -l app.kubernetes.io/name=cluster-registry-controller --timeout=120s --for condition=Ready -n cluster-registry --kubeconfig $KUBECONFIG1
+          kubectl wait pods -l app.kubernetes.io/name=cluster-registry-controller --timeout=120s --for condition=Ready -n cluster-registry --kubeconfig $KUBECONFIG2
           kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG1
           kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG2
           echo "Getting cluster c1"
