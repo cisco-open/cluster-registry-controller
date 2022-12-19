@@ -34,7 +34,11 @@ jobs:
             go-mod-cache-${{ runner.os }}-${{ env.GO_VERSION }}
             go-mod-cache-${{ runner.os }}
             go-mod-cache
-
+      - name: Set go env
+        run: |
+          echo GOPATH=$GITHUB_WORKSPACE >> $GITHUB_ENV
+          echo GO111MODULE=on >> $GITHUB_ENV
+          echo $GITHUB_WORKSPACE/bin >> $GITHUB_PATH
       - name: Set Git refname
         id: set-git-refname
         run: echo ::set-output name=git_refname::$(echo "${{ github.ref }}" | sed -r 's@refs/(heads|pull|tags)/@@g' )
@@ -53,7 +57,11 @@ jobs:
         run: make docker-build
         working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       - name: Get kind
-        run: go get sigs.k8s.io/kind@v0.11.1
+        run: go install sigs.k8s.io/kind@v0.11.1
+      - name: Get helm
+        run: |
+          wget -q -O - https://get.helm.sh/helm-v3.2.1-linux-amd64.tar.gz | tar -C /tmp -xzf -
+          mv /tmp/linux-amd64/helm $GITHUB_WORKSPACE/bin && chmod a+x $GITHUB_WORKSPACE/bin/helm
       - name: Create kind clusters
         run: |
           if [[ $KUBERNETES_VERSION=="" ]]; then
