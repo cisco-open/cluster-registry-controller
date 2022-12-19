@@ -78,7 +78,24 @@ jobs:
       - name: multicluster tests
         run: |
           kubectl get pods -A --kubeconfig $KUBECONFIG1
+          helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=c1 --kubeconfig $KUBECONFIG1
+          kubectl get pods -A --kubeconfig $KUBECONFIG1
           kubectl get pods -A --kubeconfig $KUBECONFIG2
+          helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=c2 --kubeconfig $KUBECONFIG2
+          kubectl get pods -A --kubeconfig $KUBECONFIG2
+          sleep 30
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG1
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG2
+          echo "Getting cluster c1"
+          kubectl get cluster c1 --kubeconfig $KUBECONFIG1 -o yaml | kubectl apply --kubeconfig $KUBECONFIG2 -f -
+          echo "Getting secret c1"
+          kubectl get secret -n cluster-registry c1 --kubeconfig $KUBECONFIG1 -o yaml | kubectl apply --kubeconfig $KUBECONFIG2 -f -
+          echo "Getting cluster c2"
+          kubectl get cluster c2 --kubeconfig $KUBECONFIG2 -o yaml | kubectl apply --kubeconfig $KUBECONFIG1 -f -
+          echo "Getting secret c2"
+          kubectl get secret -n cluster-registry c2 --kubeconfig $KUBECONFIG2 -o yaml | kubectl apply --kubeconfig $KUBECONFIG1 -f -
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG1
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG2
         working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       - name: Cleanup resources
         if: ${{ success() || failure() || cancelled() }}
