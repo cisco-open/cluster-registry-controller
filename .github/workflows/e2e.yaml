@@ -54,7 +54,7 @@ jobs:
             build-deps-v2
 
       - name: Run build
-        run: make docker-build
+        run: IMG=cluster-registry-controller:ci-test make docker-build
         working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       - name: Get kind
         run: go install sigs.k8s.io/kind@v0.11.1
@@ -73,15 +73,16 @@ jobs:
               kind get kubeconfig --name "kind-${i}" > ${configPath}
               echo KUBECONFIG${i}=${configPath} >> $GITHUB_ENV
               echo CLUSTER${i}_CIDR="172.18.${i}.128/25" >> $GITHUB_ENV
+              kind load docker-image cluster-registry-controller:ci-test --name "kind-${i}"
           done
         working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       - name: multicluster tests
         run: |
           kubectl get pods -A --kubeconfig $KUBECONFIG1
-          helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=c1 --kubeconfig $KUBECONFIG1
+          helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=c1 --set image.repository=cluster-registry-controller --set image.tag=ci-test --kubeconfig $KUBECONFIG1
           kubectl get pods -A --kubeconfig $KUBECONFIG1
           kubectl get pods -A --kubeconfig $KUBECONFIG2
-          helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=c2 --kubeconfig $KUBECONFIG2
+          helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=c2 --set image.repository=cluster-registry-controller --set image.tag=ci-test --kubeconfig $KUBECONFIG2
           kubectl get pods -A --kubeconfig $KUBECONFIG2
           sleep 30
           kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG1
