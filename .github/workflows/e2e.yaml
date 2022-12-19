@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2
+        with:
+          path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
 
       - name: Setup Go
         uses: actions/setup-go@v2
@@ -49,3 +51,27 @@ jobs:
 
       - name: Run build
         run: make docker-build
+        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+      - name: Get kind
+        run: go get sigs.k8s.io/kind@v0.11.1
+      - name: Create kind clusters
+        run: |
+          if [[ $KUBERNETES_VERSION=="" ]]; then
+              KUBERNETES_VERSION="v1.22.1"
+          fi
+          for (( i = 1; i <= 2; i++ )); do
+              kind create cluster --name "kind-${i}" --config test/e2e/cluster-config.yaml --image="kindest/node:$KUBERNETES_VERSION"
+              configPath=${{ github.workspace }}/src/github.com/${{ github.repository }}/config${i}
+              kind get kubeconfig --name "kind-${i}" > ${configPath}
+              echo KUBECONFIG${i}=${configPath} >> $GITHUB_ENV
+              echo CLUSTER${i}_CIDR="172.18.${i}.128/25" >> $GITHUB_ENV
+          done
+        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+      - name: multicluster tests
+        run: |
+          kubectl get pods -A --kubeconfig $KUBECONFIG1
+          kubectl get pods -A --kubeconfig $KUBECONFIG2
+        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+      - name: Cleanup resources
+        if: ${{ success() || failure() || cancelled() }}
+        run: kind delete clusters $(kind get clusters)
