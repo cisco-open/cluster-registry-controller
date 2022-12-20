@@ -78,6 +78,7 @@ jobs:
         working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       - name: multicluster tests
         run: |
+          mkdir ${ARTIFACTS_DIR}
           kubectl get pods -A --kubeconfig $KUBECONFIG1
           helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=c1 --set image.repository=cluster-registry-controller --set image.tag=ci-test --kubeconfig $KUBECONFIG1
           kubectl get pods -A --kubeconfig $KUBECONFIG1
@@ -100,7 +101,24 @@ jobs:
           kubectl get secret -n cluster-registry c2 --kubeconfig $KUBECONFIG2 -o yaml | kubectl apply --kubeconfig $KUBECONFIG1 -f -
           kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG1
           kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG2
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG1 > ${ARTIFACTS_DIR}/clusters_c1.yaml
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG2 > ${ARTIFACTS_DIR}/clusters_c2.yaml
+          sync1=$(kubectl get clusters -A --kubeconfig $KUBECONFIG1 -o jsonpath='{range .items[*]}{@.status.conditions[?(@.type=="ClustersSynced")].status}{end}')
+          sync2=$(kubectl get clusters -A --kubeconfig $KUBECONFIG2 -o jsonpath='{range .items[*]}{@.status.conditions[?(@.type=="ClustersSynced")].status}{end}')
+          if [[ "$sync1" == "" || "$sync2" == "" ]]; then
+            echo "one or more clusters not in sync"
+            exit 1
+          fi
         working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        env:
+          ARTIFACTS_DIR: ${{ github.workspace }}/test_artifacts
       - name: Cleanup resources
         if: ${{ success() || failure() || cancelled() }}
         run: kind delete clusters $(kind get clusters)
+      - name: Upload artifacts
+        if: ${{ success() || failure() || cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test_artifacts
+          path: ${{ github.workspace }}/test_artifacts
+
