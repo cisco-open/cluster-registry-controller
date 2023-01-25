@@ -26,7 +26,7 @@ securityContext:
       - ALL
 image:
   repository: ghcr.io/cisco-open/cluster-registry-controller
-  tag: v0.2.7
+  tag: v0.2.8
   pullPolicy: IfNotPresent
 
 nodeSelector: {}
