@@ -1,9 +1,16 @@
 # Copyright (c) 2021, and 2022 Cisco and/or its affiliates. All rights reserved.
+ARG GID=1000
+ARG UID=1000
 
 # Build the manager binary
 FROM golang:1.18.0 as builder
-
 ARG GITHUB_ACCESS_TOKEN
+ARG GID
+ARG UID
+
+# Create user and group
+RUN groupadd -g ${GID} appgroup && \
+    useradd -u ${UID} --gid appgroup appuser
 
 ARG GOPROXY="https://proxy.golang.org,direct"
 ENV GOPROXY="${GOPROXY}"
@@ -32,8 +39,12 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on make binary
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
+ARG GID
+ARG UID
 WORKDIR /
 COPY --from=builder /workspace/bin/manager .
-USER nonroot:nonroot
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
+USER ${UID}:${GID}
 
 ENTRYPOINT ["/manager"]

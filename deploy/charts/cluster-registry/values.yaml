@@ -16,10 +16,14 @@ podAnnotations: {}
 imagePullSecrets: []
 
 podSecurityContext:
-  runAsUser: 65534
-  runAsGroup: 65534
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
 securityContext:
   allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
 image:
   repository: ghcr.io/cisco-open/cluster-registry-controller
   tag: v0.2.7
