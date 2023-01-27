@@ -105,12 +105,18 @@ jobs:
           kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG2
           kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG1 > ${ARTIFACTS_DIR}/clusters_c1.yaml
           kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG2 > ${ARTIFACTS_DIR}/clusters_c2.yaml
-          sync1=$(kubectl get clusters -A --kubeconfig $KUBECONFIG1 -o jsonpath='{range .items[*]}{@.status.conditions[?(@.type=="ClustersSynced")].status}{end}')
-          sync2=$(kubectl get clusters -A --kubeconfig $KUBECONFIG2 -o jsonpath='{range .items[*]}{@.status.conditions[?(@.type=="ClustersSynced")].status}{end}')
-          if [[ "$sync1" == "" || "$sync2" == "" ]]; then
+          sync1=$(kubectl get clusters -A --kubeconfig $KUBECONFIG1 -o jsonpath='{range .items[0]}{@.status.conditions[?(@.type=="ClustersSynced")].status}{end}')
+          echo "Cluster 1 sync status = ${sync1}"
+          sync2=$(kubectl get clusters -A --kubeconfig $KUBECONFIG2 -o jsonpath='{range .items[1]}{@.status.conditions[?(@.type=="ClustersSynced")].status}{end}')
+          echo "Cluster 2 sync status = ${sync2}"
+          if [[ "${sync1}" == "" || "${sync2}" == "" ]]; then
             echo "one or more clusters not in sync"
             exit 1
           fi
+          sync_reason1=$(kubectl get clusters -A --kubeconfig $KUBECONFIG1 -o jsonpath='{range .items[0]}{@.status.conditions[?(@.type=="ClustersSynced")].reason}{end}')
+          sync_reason2=$(kubectl get clusters -A --kubeconfig $KUBECONFIG1 -o jsonpath='{range .items[1]}{@.status.conditions[?(@.type=="ClustersSynced")].reason}{end}')
+          echo "Sync status reason 1 = '${sync_reason1}'"
+          echo "Sync status reason 1 = '${sync_reason2}'"
         working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
         env:
           ARTIFACTS_DIR: ${{ github.workspace }}/test_artifacts
