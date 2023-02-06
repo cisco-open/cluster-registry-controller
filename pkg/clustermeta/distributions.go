@@ -22,12 +22,13 @@ import (
 )
 
 const (
-	PKE   = "PKE"
-	EKS   = "EKS"
-	GKE   = "GKE"
-	AKS   = "AKS"
-	KINDD = "KIND"
-	IKS   = "IKS"
+	PKE       = "PKE"
+	EKS       = "EKS"
+	GKE       = "GKE"
+	AKS       = "AKS"
+	KINDD     = "KIND"
+	IKS       = "IKS"
+	OPENSHIFT = "OPENSHIFT"
 )
 
 func IsPKE(ctx context.Context, client client.Client, node *corev1.Node) (match bool, distribution string, err error) {
@@ -70,6 +71,13 @@ func IsEKS(ctx context.Context, client client.Client, node *corev1.Node) (match 
 	match = true
 
 	if _, ok := node.Annotations["kubeadm.alpha.kubernetes.io/cri-socket"]; ok {
+		match = false
+
+		return
+	}
+
+	// We will set OpenShift as our distro even if we run OpenShift on AWS cluster
+	if _, ok := node.Labels["node.openshift.io/os_id"]; ok {
 		match = false
 
 		return
@@ -223,6 +231,42 @@ func IsIKS(ctx context.Context, client client.Client, node *corev1.Node) (match 
 	}
 
 	if provider != CISCO {
+		match = false
+
+		return
+	}
+
+	return match, distribution, err
+}
+
+func IsOpenShift(ctx context.Context, client client.Client, node *corev1.Node) (match bool, distribution string, err error) {
+	distribution = OPENSHIFT
+
+	if node == nil {
+		node, _, err = getK8sNode(ctx, client)
+		if err != nil {
+			return
+		}
+	}
+
+	match = true
+	if value, ok := node.Labels["node.openshift.io/os_id"]; !ok || value == "" {
+		match = false
+
+		return
+	}
+
+	var provider string
+	provider, err = DetectProvider(ctx, client, node)
+	if IsUnknownProviderError(err) {
+		return false, distribution, nil
+	}
+	if err != nil {
+		return
+	}
+
+	// NOTE: We currently support ROSA setup where install OpenShift on AWS clusters so the provider should be Amazon.
+	if provider != AMAZON {
 		match = false
 
 		return
