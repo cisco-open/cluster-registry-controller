@@ -76,7 +76,7 @@ func IsEKS(ctx context.Context, client client.Client, node *corev1.Node) (match 
 		return
 	}
 
-	// We will set OpenShift as our distro even if we run OpenShift on AWS cluster
+	// Note: We will set the distro to OPENSHIFT not EKS if we find out that the Node object contains OpenShift labels.
 	if _, ok := node.Labels["node.openshift.io/os_id"]; ok {
 		match = false
 
@@ -265,7 +265,7 @@ func IsOpenShift(ctx context.Context, client client.Client, node *corev1.Node) (
 		return
 	}
 
-	// NOTE: We currently support ROSA setup where install OpenShift on AWS clusters so the provider should be Amazon.
+	// Note: We currently support ROSA setup where we install OpenShift on AWS clusters so the provider should be Amazon.
 	if provider != AMAZON {
 		match = false
 
