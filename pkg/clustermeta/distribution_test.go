@@ -77,6 +77,10 @@ func TestDistributionDetector(t *testing.T) {
 			filename:     "cisco-iks.yaml",
 			distribution: "IKS",
 		},
+		{
+			filename:     "amazon-openshift.yaml",
+			distribution: "OPENSHIFT",
+		},
 	}
 
 	// with mocked client

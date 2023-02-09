@@ -29,6 +29,7 @@ var knownDistributions = []IsDistribution{
 	IsAKS,
 	IsKIND,
 	IsIKS,
+	IsOpenShift,
 }
 
 type IsDistribution func(ctx context.Context, client client.Client, node *corev1.Node) (bool, string, error)
