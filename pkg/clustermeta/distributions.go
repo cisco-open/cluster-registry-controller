@@ -256,21 +256,5 @@ func IsOpenShift(ctx context.Context, client client.Client, node *corev1.Node) (
 		return
 	}
 
-	var provider string
-	provider, err = DetectProvider(ctx, client, node)
-	if IsUnknownProviderError(err) {
-		return false, distribution, nil
-	}
-	if err != nil {
-		return
-	}
-
-	// Note: We currently support ROSA setup where we install OpenShift on AWS clusters so the provider should be Amazon.
-	if provider != AMAZON {
-		match = false
-
-		return
-	}
-
 	return match, distribution, err
 }
