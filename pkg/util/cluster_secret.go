@@ -136,8 +136,10 @@ func GetReaderSecretTokenAndCACert(ctx context.Context, kubeClient client.Client
 		if secret.Type == corev1.SecretTypeServiceAccountToken {
 			if value, ok := secret.Annotations[corev1.ServiceAccountNameKey]; ok {
 				if value == saRef.Name {
-					secretObj = &secret
+					sec := secret
+					secretObj = &sec
 					secretObjRef.Name = secretObj.GetName()
+
 					break
 				}
 			}
