@@ -12,7 +12,7 @@ IMG ?= controller:latest
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 REPO_ROOT=$(shell git rev-parse --show-toplevel)
 GOTESTSUM_VERSION = 0.6.0
-KUBEBUILDER_TOOLS_VERSION=1.26.1
+KUBEBUILDER_TOOLS_VERSION=1.19.2
 KUBEBUILDER_ASSETS_BINARY_DIR = kubebuilder-tools/${KUBEBUILDER_TOOLS_VERSION}/bin
 LICENSEI_VERSION = 0.5.0
 GOLANGCI_VERSION = 1.45.2

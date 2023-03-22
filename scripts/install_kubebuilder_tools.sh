@@ -9,7 +9,7 @@ arch=$(go env GOARCH)
 
 # These are the current official versions for kubebuilder-tools (v1.19.2 or v1.22.x is recommended)
   # Reference: https://book.kubebuilder.io/reference/envtest.html#kubernetes-120-and-121-binary-issues
-verified_kubebuilder_tools_version=(1.26.1)
+verified_kubebuilder_tools_version=(1.19.2)
 
 
 FLOCK=`which flock 2> /dev/null || true`
