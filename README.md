@@ -59,7 +59,7 @@ Otherwise, configure a reachable endpoint for them in the [Cluster CR spec](http
     helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=<FIRST-CLUSTER-NAME> --kube-context <FIRST-CLUSTER-CONTEXT>
     ```
 
-    > Tip: Use the `--set apiServerEndpointAddress=<PUBLIC-API-SERVER-ADDRESS>` flag, if your Kubernetes cluster API returns private ip for the api server.
+    > Tip: Use the `--set controller.apiServerEndpointAddress=<PUBLIC-API-SERVER-ADDRESS>` flag, if your Kubernetes cluster API returns private ip for the api server.
 
 2. Install cluster registry controller on the second cluster. This command installs the cluster registry controller on your cluster, creates a Cluster CR with the name `SECOND-CLUSTER-NAME`, and it also creates a secret that holds a Kubeconfig with read access to this cluster.
 

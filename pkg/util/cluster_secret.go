@@ -103,22 +103,52 @@ func GetReaderSecretTokenAndCACert(ctx context.Context, kubeClient client.Client
 		return nil, nil, errors.WithStackIf(err)
 	}
 
-	// After K8s v1.24, Secret objects containing ServiceAccount tokens are no longer auto-generated, so we will have to manually create Secret in order to get the token.
-	// Reference: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.24.md#no-really-you-must-read-this-before-you-upgrade
-	secretObj := &corev1.Secret{}
-
-	readerSecretName := saRef.Name + "-token"
-	if len(sa.Secrets) != 0 {
-		readerSecretName = sa.Secrets[0].Name
-	}
+	var secretObj *corev1.Secret
 
 	secretObjRef := types.NamespacedName{
 		Namespace: saRef.Namespace,
-		Name:      readerSecretName,
+		Name:      saRef.Name + "-token",
 	}
 
-	err = kubeClient.Get(ctx, secretObjRef, secretObj)
-	if err != nil && k8sErrors.IsNotFound(err) {
+	secretList := &corev1.SecretList{}
+
+	opts := []client.ListOption{
+		client.InNamespace(sa.Namespace),
+	}
+
+	// List all Secrets in the ServiceAccount sa Namespace
+	err = kubeClient.List(ctx, secretList, opts...)
+	if err != nil {
+		return nil, nil, errors.WrapIfWithDetails(
+			err,
+			"retrieving kubernetes secrets failed with unexpected error",
+			"namespace", saRef.Namespace,
+		)
+	}
+
+	// Looking for a Secret with
+	// 1. Type="kubernetes.io/service-account-token"
+	// 2. Annotation "kubernetes.io/service-account.name"= the ServiceAccount sa's name
+	// service-account-token Secret must be find manually, because
+	// 1. Kubernetes >= 1.24 does not add Secret to ServiceAccount.secrets
+	// 2. OpenShift 4.11 adds dockercfg Secret to ServiceAccount.secrets
+	for _, secret := range secretList.Items {
+		if secret.Type == corev1.SecretTypeServiceAccountToken {
+			if value, ok := secret.Annotations[corev1.ServiceAccountNameKey]; ok {
+				if value == saRef.Name {
+					sec := secret
+					secretObj = &sec
+					secretObjRef.Name = secretObj.GetName()
+
+					break
+				}
+			}
+		}
+	}
+
+	// After K8s v1.24, Secret objects containing ServiceAccount tokens are no longer auto-generated, so we will have to manually create Secret in order to get the token.
+	// Reference: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.24.md#no-really-you-must-read-this-before-you-upgrade
+	if secretObj == nil {
 		secretObj = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: secretObjRef.Namespace,
@@ -127,23 +157,19 @@ func GetReaderSecretTokenAndCACert(ctx context.Context, kubeClient client.Client
 					"kubernetes.io/service-account.name": saRef.Name,
 				},
 			},
-			Type: "kubernetes.io/service-account-token",
+			Type: corev1.SecretTypeServiceAccountToken,
 		}
 
 		err = kubeClient.Create(ctx, secretObj)
 		if err != nil {
-			return nil, nil, errors.WrapIfWithDetails(err, "creating kubernetes secret failed", "namespace", saRef.Namespace, "secret", readerSecretName)
+			return nil, nil, errors.WrapIfWithDetails(err, "creating kubernetes secret failed", "namespace", secretObjRef.Namespace, "secret", secretObjRef.Name)
 		}
 
 		// Wait for token-controller to create token for the reader secret
-		return waitForSecretTokenGenerated(ctx, kubeClient, secretObjRef)
-	} else if err != nil {
-		return nil, nil, errors.WrapIfWithDetails(
-			err,
-			"retrieving kubernetes secret failed with unexpected error",
-			"namespace", saRef.Namespace,
-			"secret", readerSecretName,
-		)
+		return waitForSecretTokenGenerated(ctx, kubeClient, types.NamespacedName{
+			Namespace: secretObjRef.Namespace,
+			Name:      secretObjRef.Name,
+		})
 	}
 
 	return secretObj.Data["token"], secretObj.Data["ca.crt"], nil

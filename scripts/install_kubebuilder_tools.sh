@@ -42,6 +42,7 @@ fi
 
   if [[ ! -e "${target_dir}/complete" ]]; then
     echo "Installing kubebuilder-tools version v${kubebuilder_tools_version}..."
+    echo "Downloading https://go.kubebuilder.io/test-tools/${kubebuilder_tools_version}/${os}/${arch}"
     #  Validate kubebuilder-tools version
     if echo ${verified_kubebuilder_tools_version[@]} | grep -q -w ${kubebuilder_tools_version}; then
         curl -sSLo ${target_dir}/envtest-bins.tar.gz "https://go.kubebuilder.io/test-tools/${kubebuilder_tools_version}/${os}/${arch}"
