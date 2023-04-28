@@ -210,6 +210,30 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	obj.SetName(req.Name)
 	obj.SetNamespace(req.Namespace)
 
+	// Mutate prior to check target namespace
+	err := r.GetClient().Get(ctx, req.NamespacedName, obj)
+	if apierrors.IsNotFound(err) || err == nil && !obj.GetDeletionTimestamp().IsZero() {
+		return ctrl.Result{}, r.deleteResource(ctx, obj, log)
+	}
+	if err != nil {
+		return ctrl.Result{}, errors.WrapIf(err, "could not get object")
+	}
+
+	ok, matchedRules, err := r.rule.Match(obj)
+	if !ok {
+		return ctrl.Result{}, nil
+	}
+	if err != nil {
+		return ctrl.Result{}, errors.WrapIf(err, "could not match object")
+	}
+
+	log.Info("reconciling", "gvk", r.gvk)
+
+	obj, err = r.mutateObject(obj, matchedRules)
+	if err != nil {
+		return ctrl.Result{}, errors.WrapIf(err, "could not mutate object")
+	}
+
 	// check namespace existence
 	if req.Namespace != "" {
 		err := r.localClient.Get(ctx, types.NamespacedName{
@@ -230,14 +254,6 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
-	err := r.GetClient().Get(ctx, req.NamespacedName, obj)
-	if apierrors.IsNotFound(err) || err == nil && !obj.GetDeletionTimestamp().IsZero() {
-		return ctrl.Result{}, r.deleteResource(ctx, obj, log)
-	}
-	if err != nil {
-		return ctrl.Result{}, errors.WrapIf(err, "could not get object")
-	}
-
 	if r.rateLimiter != nil {
 		limited, _, err := r.rateLimiter.RateLimit(req.String(), 1)
 		if err != nil {
@@ -252,21 +268,6 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				RequeueAfter: time.Second * 30, // nolint:gomnd
 			}, nil
 		}
-	}
-
-	ok, matchedRules, err := r.rule.Match(obj)
-	if !ok {
-		return ctrl.Result{}, nil
-	}
-	if err != nil {
-		return ctrl.Result{}, errors.WrapIf(err, "could not match object")
-	}
-
-	log.Info("reconciling", "gvk", r.gvk)
-
-	obj, err = r.mutateObject(obj, matchedRules)
-	if err != nil {
-		return ctrl.Result{}, errors.WrapIf(err, "could not mutate object")
 	}
 
 	rec := reconciler.NewGenericReconciler(
