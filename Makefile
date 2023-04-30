@@ -127,4 +127,3 @@ help:
 tidy: ## Execute go mod tidy
 	go mod tidy
 	go mod download all
-
