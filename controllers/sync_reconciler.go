@@ -56,7 +56,8 @@ import (
 )
 
 const (
-	originalNameLabel = "cluster-registry.k8s.cisco.com/original-name"
+	originalNameLabel      = "cluster-registry.k8s.cisco.com/original-name"
+	originalNamespaceLabel = "cluster-registry.k8s.cisco.com/original-namespace"
 )
 
 type syncReconciler struct {
@@ -79,7 +80,8 @@ type syncReconciler struct {
 	localClient client.Client
 	localCache  cache.Cache
 
-	resourceNameMutated bool
+	resourceNameMutated      bool
+	resourceNamespaceMutated bool
 }
 
 type SyncReconcilerOption func(r *syncReconciler)
@@ -587,11 +589,20 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 		obj.SetLabels(objLabels)
 		r.resourceNameMutated = true
 	}
+	if current.GetNamespace() != obj.GetNamespace() {
+		objLabels := obj.GetLabels()
+		if objLabels == nil {
+			objLabels = make(map[string]string)
+		}
+		objLabels[originalNamespaceLabel] = current.GetNamespace()
+		obj.SetLabels(objLabels)
+		r.resourceNamespaceMutated = true
+	}
 
 	return obj, nil
 }
 
-func (r *syncReconciler) getObjectByOriginalName(ctx context.Context, obj client.Object, gvk schema.GroupVersionKind) (bool, client.Object, error) {
+func (r *syncReconciler) getObjectByOriginalNamespaceAndName(ctx context.Context, obj client.Object, gvk schema.GroupVersionKind) (bool, client.Object, error) {
 	var err error
 
 	objects := &unstructured.UnstructuredList{}
@@ -600,9 +611,18 @@ func (r *syncReconciler) getObjectByOriginalName(ctx context.Context, obj client
 		Kind:    fmt.Sprintf("%sList", gvk.Kind),
 		Version: gvk.Version,
 	})
+	name := obj.GetName()
+	namespace := obj.GetNamespace()
 
-	err = r.localClient.List(ctx, objects, client.InNamespace(obj.GetNamespace()), client.MatchingLabels(map[string]string{
-		originalNameLabel: obj.GetName(),
+	if originalName, ok := obj.GetLabels()[originalNameLabel]; ok {
+		name = originalName
+	}
+	if originalNamespace, ok := obj.GetLabels()[originalNamespaceLabel]; ok {
+		namespace = originalNamespace
+	}
+
+	err = r.localClient.List(ctx, objects, client.InNamespace(namespace), client.MatchingLabels(map[string]string{
+		originalNameLabel: name,
 		clusterregistryv1alpha1.OwnershipAnnotation: r.clusterID,
 	}))
 	if err != nil {
@@ -636,8 +656,8 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, 
 		return errors.New("invalid object")
 	}
 
-	if r.resourceNameMutated { // nolint:nestif
-		if ok, obj, err := r.getObjectByOriginalName(ctx, obj, current.GetObjectKind().GroupVersionKind()); err != nil {
+	if r.resourceNamespaceMutated || r.resourceNameMutated { // nolint:nestif
+		if ok, obj, err := r.getObjectByOriginalNamespaceAndName(ctx, obj, current.GetObjectKind().GroupVersionKind()); err != nil {
 			return err
 		} else if ok {
 			current = obj
@@ -780,15 +800,19 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj client.Objec
 		Informer: localInformer,
 	}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 		name := obj.GetName()
+		namespace := obj.GetNamespace()
 		if originalName, ok := obj.GetLabels()[originalNameLabel]; ok {
 			name = originalName
+		}
+		if originalNamespace, ok := obj.GetLabels()[originalNamespaceLabel]; ok {
+			namespace = originalNamespace
 		}
 
 		return []reconcile.Request{
 			{
 				NamespacedName: types.NamespacedName{
 					Name:      name,
-					Namespace: obj.GetNamespace(),
+					Namespace: namespace,
 				},
 			},
 		}
