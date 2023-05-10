@@ -237,7 +237,7 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// check namespace existence
-	if req.Namespace != "" {
+	if obj.GetNamespace() != "" {
 		err := r.localClient.Get(ctx, types.NamespacedName{
 			Name: req.Namespace,
 		}, &corev1.Namespace{})
@@ -247,8 +247,9 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 		if apierrors.IsNotFound(err) {
 			msg := "namespace does not exists locally"
-			r.localRecorder.Event(r.rule, corev1.EventTypeWarning, "ObjectNotReconciledMissingNamespace", fmt.Sprintf("could not reconcile (resource: %s): %s", req, msg))
-			log.Info(msg)
+			localResource := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
+			r.localRecorder.Event(r.rule, corev1.EventTypeWarning, "ObjectNotReconciledMissingNamespace", fmt.Sprintf("could not reconcile (resource: %s, localResource: %s): %s", req, localResource, msg))
+			log.Info(msg, "localResource", localResource.String())
 
 			return ctrl.Result{
 				RequeueAfter: time.Second * 30, //nolint:gomnd
