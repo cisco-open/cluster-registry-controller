@@ -239,7 +239,7 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// check namespace existence
 	if obj.GetNamespace() != "" {
 		err := r.localClient.Get(ctx, types.NamespacedName{
-			Name: req.Namespace,
+			Name: obj.GetNamespace(),
 		}, &corev1.Namespace{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return ctrl.Result{}, err
