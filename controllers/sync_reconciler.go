@@ -56,7 +56,8 @@ import (
 )
 
 const (
-	originalNameLabel = "cluster-registry.k8s.cisco.com/original-name"
+	originalNameLabel      = "cluster-registry.k8s.cisco.com/original-name"
+	originalNamespaceLabel = "cluster-registry.k8s.cisco.com/original-namespace"
 )
 
 type syncReconciler struct {
@@ -79,7 +80,8 @@ type syncReconciler struct {
 	localClient client.Client
 	localCache  cache.Cache
 
-	resourceNameMutated bool
+	resourceNameMutated      bool
+	resourceNamespaceMutated bool
 }
 
 type SyncReconcilerOption func(r *syncReconciler)
@@ -210,10 +212,34 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	obj.SetName(req.Name)
 	obj.SetNamespace(req.Namespace)
 
+	// Mutate prior to check target namespace
+	err := r.GetClient().Get(ctx, req.NamespacedName, obj)
+	if apierrors.IsNotFound(err) || err == nil && !obj.GetDeletionTimestamp().IsZero() {
+		return ctrl.Result{}, r.deleteResource(ctx, obj, log)
+	}
+	if err != nil {
+		return ctrl.Result{}, errors.WrapIf(err, "could not get object")
+	}
+
+	ok, matchedRules, err := r.rule.Match(obj)
+	if !ok {
+		return ctrl.Result{}, nil
+	}
+	if err != nil {
+		return ctrl.Result{}, errors.WrapIf(err, "could not match object")
+	}
+
+	log.Info("reconciling", "gvk", r.gvk)
+
+	obj, err = r.mutateObject(obj, matchedRules)
+	if err != nil {
+		return ctrl.Result{}, errors.WrapIf(err, "could not mutate object")
+	}
+
 	// check namespace existence
-	if req.Namespace != "" {
+	if obj.GetNamespace() != "" {
 		err := r.localClient.Get(ctx, types.NamespacedName{
-			Name: req.Namespace,
+			Name: obj.GetNamespace(),
 		}, &corev1.Namespace{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -221,21 +247,14 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 		if apierrors.IsNotFound(err) {
 			msg := "namespace does not exists locally"
-			r.localRecorder.Event(r.rule, corev1.EventTypeWarning, "ObjectNotReconciledMissingNamespace", fmt.Sprintf("could not reconcile (resource: %s): %s", req, msg))
-			log.Info(msg)
+			localResource := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
+			r.localRecorder.Event(r.rule, corev1.EventTypeWarning, "ObjectNotReconciledMissingNamespace", fmt.Sprintf("could not reconcile (resource: %s, localResource: %s): %s", req, localResource, msg))
+			log.Info(msg, "localResource", localResource.String())
 
 			return ctrl.Result{
 				RequeueAfter: time.Second * 30, //nolint:gomnd
 			}, nil
 		}
-	}
-
-	err := r.GetClient().Get(ctx, req.NamespacedName, obj)
-	if apierrors.IsNotFound(err) || err == nil && !obj.GetDeletionTimestamp().IsZero() {
-		return ctrl.Result{}, r.deleteResource(ctx, obj, log)
-	}
-	if err != nil {
-		return ctrl.Result{}, errors.WrapIf(err, "could not get object")
 	}
 
 	if r.rateLimiter != nil {
@@ -252,21 +271,6 @@ func (r *syncReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				RequeueAfter: time.Second * 30, // nolint:gomnd
 			}, nil
 		}
-	}
-
-	ok, matchedRules, err := r.rule.Match(obj)
-	if !ok {
-		return ctrl.Result{}, nil
-	}
-	if err != nil {
-		return ctrl.Result{}, errors.WrapIf(err, "could not match object")
-	}
-
-	log.Info("reconciling", "gvk", r.gvk)
-
-	obj, err = r.mutateObject(obj, matchedRules)
-	if err != nil {
-		return ctrl.Result{}, errors.WrapIf(err, "could not mutate object")
 	}
 
 	rec := reconciler.NewGenericReconciler(
@@ -586,11 +590,20 @@ func (r *syncReconciler) mutateObject(current client.Object, matchedRules cluste
 		obj.SetLabels(objLabels)
 		r.resourceNameMutated = true
 	}
+	if current.GetNamespace() != obj.GetNamespace() {
+		objLabels := obj.GetLabels()
+		if objLabels == nil {
+			objLabels = make(map[string]string)
+		}
+		objLabels[originalNamespaceLabel] = current.GetNamespace()
+		obj.SetLabels(objLabels)
+		r.resourceNamespaceMutated = true
+	}
 
 	return obj, nil
 }
 
-func (r *syncReconciler) getObjectByOriginalName(ctx context.Context, obj client.Object, gvk schema.GroupVersionKind) (bool, client.Object, error) {
+func (r *syncReconciler) getObjectByOriginalNamespaceAndName(ctx context.Context, obj client.Object, gvk schema.GroupVersionKind) (bool, client.Object, error) {
 	var err error
 
 	objects := &unstructured.UnstructuredList{}
@@ -599,9 +612,18 @@ func (r *syncReconciler) getObjectByOriginalName(ctx context.Context, obj client
 		Kind:    fmt.Sprintf("%sList", gvk.Kind),
 		Version: gvk.Version,
 	})
+	name := obj.GetName()
+	namespace := obj.GetNamespace()
 
-	err = r.localClient.List(ctx, objects, client.InNamespace(obj.GetNamespace()), client.MatchingLabels(map[string]string{
-		originalNameLabel: obj.GetName(),
+	if originalName, ok := obj.GetLabels()[originalNameLabel]; ok {
+		name = originalName
+	}
+	if originalNamespace, ok := obj.GetLabels()[originalNamespaceLabel]; ok {
+		namespace = originalNamespace
+	}
+
+	err = r.localClient.List(ctx, objects, client.InNamespace(namespace), client.MatchingLabels(map[string]string{
+		originalNameLabel: name,
 		clusterregistryv1alpha1.OwnershipAnnotation: r.clusterID,
 	}))
 	if err != nil {
@@ -635,8 +657,8 @@ func (r *syncReconciler) deleteResource(ctx context.Context, obj client.Object, 
 		return errors.New("invalid object")
 	}
 
-	if r.resourceNameMutated { // nolint:nestif
-		if ok, obj, err := r.getObjectByOriginalName(ctx, obj, current.GetObjectKind().GroupVersionKind()); err != nil {
+	if r.resourceNamespaceMutated || r.resourceNameMutated { // nolint:nestif
+		if ok, obj, err := r.getObjectByOriginalNamespaceAndName(ctx, obj, current.GetObjectKind().GroupVersionKind()); err != nil {
 			return err
 		} else if ok {
 			current = obj
@@ -779,15 +801,19 @@ func (r *syncReconciler) initLocalInformer(ctx context.Context, obj client.Objec
 		Informer: localInformer,
 	}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 		name := obj.GetName()
+		namespace := obj.GetNamespace()
 		if originalName, ok := obj.GetLabels()[originalNameLabel]; ok {
 			name = originalName
+		}
+		if originalNamespace, ok := obj.GetLabels()[originalNamespaceLabel]; ok {
+			namespace = originalNamespace
 		}
 
 		return []reconcile.Request{
 			{
 				NamespacedName: types.NamespacedName{
 					Name:      name,
-					Namespace: obj.GetNamespace(),
+					Namespace: namespace,
 				},
 			},
 		}
