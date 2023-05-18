@@ -41,7 +41,7 @@ Parameter | Description | Default
 `podSecurityContext` | Operator deployment pod security context (YAML) | runAsUser: `65534`, runAsGroup: `65534`
 `securityContext` | Operator deployment security context (YAML) | allowPrivilegeEscalation: `false`
 `image.repository` | Operator container image repository | `ghcr.io/cisco-open/cluster-registry-controller`
-`image.tag` | Operator container image tag | `v0.2.10`
+`image.tag` | Operator container image tag | `v0.2.11`
 `image.pullPolicy` | Operator container image pull policy | `IfNotPresent`
 `nodeselector` | Operator deployment node selector (YAML) | `{}`
 `affinity` | Operator deployment affinity (YAML) | `{}`

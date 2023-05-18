@@ -9,5 +9,5 @@ maintainers:
 sources:
   - https://github.com/cisco-open/cluster-registry-controller
 
-version: 0.2.10
-appVersion: v0.2.10
+version: 0.2.11
+appVersion: v0.2.11
