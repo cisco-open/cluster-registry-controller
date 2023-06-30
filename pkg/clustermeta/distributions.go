@@ -16,6 +16,7 @@ package clustermeta
 
 import (
 	"context"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,6 +30,8 @@ const (
 	KINDD     = "KIND"
 	IKS       = "IKS"
 	OPENSHIFT = "OPENSHIFT"
+	RKE       = "RKE"
+	K3S       = "K3S"
 )
 
 func IsPKE(ctx context.Context, client client.Client, node *corev1.Node) (match bool, distribution string, err error) {
@@ -257,4 +260,46 @@ func IsOpenShift(ctx context.Context, client client.Client, node *corev1.Node) (
 	}
 
 	return match, distribution, err
+}
+
+func IsRKE(ctx context.Context, client client.Client, node *corev1.Node) (match bool, distribution string, err error) {
+	distribution = RKE
+
+	if node == nil {
+		node, _, err = getK8sNode(ctx, client)
+		if err != nil {
+			return
+		}
+	}
+
+	match = false
+	for k := range node.Annotations {
+		if strings.HasPrefix(k, "rke.cattle.io/") {
+			match = true
+			return
+		}
+	}
+
+	return
+}
+
+func IsK3S(ctx context.Context, client client.Client, node *corev1.Node) (match bool, distribution string, err error) {
+	distribution = K3S
+
+	if node == nil {
+		node, _, err = getK8sNode(ctx, client)
+		if err != nil {
+			return
+		}
+	}
+
+	match = false
+	for k := range node.Annotations {
+		if strings.HasPrefix(k, "k3s.io/") {
+			match = true
+			return
+		}
+	}
+
+	return
 }

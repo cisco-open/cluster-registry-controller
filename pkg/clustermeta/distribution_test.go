@@ -81,6 +81,14 @@ func TestDistributionDetector(t *testing.T) {
 			filename:     "amazon-openshift.yaml",
 			distribution: "OPENSHIFT",
 		},
+		{
+			filename:     "unknown-rke.yaml",
+			distribution: "RKE",
+		},
+		{
+			filename:     "unknown-k3s.yaml",
+			distribution: "K3S",
+		},
 	}
 
 	// with mocked client
