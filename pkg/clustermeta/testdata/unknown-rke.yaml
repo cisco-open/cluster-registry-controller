@@ -1,0 +1,153 @@
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    flannel.alpha.coreos.com/backend-data: '{"VNI":1,"VtepMAC":"66:52:b5:9b:39:6d"}'
+    flannel.alpha.coreos.com/backend-type: vxlan
+    flannel.alpha.coreos.com/kube-subnet-manager: "true"
+    flannel.alpha.coreos.com/public-ip: 1.2.3.4
+    node.alpha.kubernetes.io/ttl: "0"
+    projectcalico.org/IPv4Address: 1.2.3.4/30
+    projectcalico.org/IPv4IPIPTunnelAddr: 10.42.0.1
+    rke.cattle.io/external-ip: 1.2.3.4
+    rke.cattle.io/internal-ip: 1.2.3.4
+    volumes.kubernetes.io/controller-managed-attach-detach: "true"
+  creationTimestamp: "2023-06-28T10:23:54Z"
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: 1.2.3.4
+    kubernetes.io/os: linux
+    node-role.kubernetes.io/controlplane: "true"
+    node-role.kubernetes.io/etcd: "true"
+    node-role.kubernetes.io/worker: "true"
+  name: 1.2.3.4
+  resourceVersion: "4501"
+  uid: 3591114e-12dd-4533-a8f1-673b7de61fd1
+spec:
+  podCIDR: 10.42.0.0/24
+  podCIDRs:
+  - 10.42.0.0/24
+status:
+  addresses:
+  - address: 1.2.3.4
+    type: InternalIP
+  - address: 1.2.3.4
+    type: Hostname
+  allocatable:
+    cpu: "4"
+    ephemeral-storage: "6627384105"
+    hugepages-1Gi: "0"
+    hugepages-2Mi: "0"
+    memory: 3910472Ki
+    pods: "110"
+  capacity:
+    cpu: "4"
+    ephemeral-storage: 7191172Ki
+    hugepages-1Gi: "0"
+    hugepages-2Mi: "0"
+    memory: 4012872Ki
+    pods: "110"
+  conditions:
+  - lastHeartbeatTime: "2023-06-30T18:00:03Z"
+    lastTransitionTime: "2023-06-30T18:00:03Z"
+    message: Flannel is running on this node
+    reason: FlannelIsUp
+    status: "False"
+    type: NetworkUnavailable
+  - lastHeartbeatTime: "2023-06-30T18:22:12Z"
+    lastTransitionTime: "2023-06-28T10:23:54Z"
+    message: kubelet has sufficient memory available
+    reason: KubeletHasSufficientMemory
+    status: "False"
+    type: MemoryPressure
+  - lastHeartbeatTime: "2023-06-30T18:22:12Z"
+    lastTransitionTime: "2023-06-28T10:23:54Z"
+    message: kubelet has no disk pressure
+    reason: KubeletHasNoDiskPressure
+    status: "False"
+    type: DiskPressure
+  - lastHeartbeatTime: "2023-06-30T18:22:12Z"
+    lastTransitionTime: "2023-06-28T10:23:54Z"
+    message: kubelet has sufficient PID available
+    reason: KubeletHasSufficientPID
+    status: "False"
+    type: PIDPressure
+  - lastHeartbeatTime: "2023-06-30T18:22:12Z"
+    lastTransitionTime: "2023-06-30T17:59:47Z"
+    message: kubelet is posting ready status. AppArmor enabled
+    reason: KubeletReady
+    status: "True"
+    type: Ready
+  daemonEndpoints:
+    kubeletEndpoint:
+      Port: 10250
+  images:
+  - names:
+    - rancher/hyperkube@sha256:df1f498e106eff587fdae2ebf3c24019063392a7c1d16f84a64e2494b899eb1c
+    - rancher/hyperkube:v1.25.6-rancher4
+    sizeBytes: 2197934780
+  - names:
+    - rancher/rke-tools@sha256:c335ad107733ac03738fb69d98082caf88bdc29d8eb31191b75a44e5baa34afc
+    - rancher/rke-tools:v0.1.87
+    sizeBytes: 277342040
+  - names:
+    - rancher/nginx-ingress-controller@sha256:d47e59a054e3aee7a731b575e463ce05f29783945529d2116a0b28e0499f8152
+    - rancher/nginx-ingress-controller:nginx-1.5.1-rancher2
+    sizeBytes: 269799451
+  - names:
+    - rancher/mirrored-calico-node@sha256:d30a70114c8df718b957db1ffd07fbc53ba44e860ce2be19fcac95accd8026a8
+    - rancher/mirrored-calico-node:v3.24.1
+    sizeBytes: 222525166
+  - names:
+    - rancher/calico-cni@sha256:01265bdaecee7f38781e36d2154294725e72f418d9a8dde8187a0068b786a2c2
+    - rancher/calico-cni:v3.24.1-rancher1
+    sizeBytes: 201353594
+  - names:
+    - rancher/mirrored-coreos-etcd@sha256:c39e96f43b58fc6fe85c6712f0b0c4958ebdd57acb54e7a73965cf3c4d8a3320
+    - rancher/mirrored-coreos-etcd:v3.5.6
+    sizeBytes: 181461511
+  - names:
+    - rancher/mirrored-calico-kube-controllers@sha256:045647bf84a4e9d4849f8a1d11152b9e16db4127441e8777a77a9b19d6e88759
+    - rancher/mirrored-calico-kube-controllers:v3.24.1
+    sizeBytes: 71313096
+  - names:
+    - rancher/mirrored-metrics-server@sha256:16185c0d4d01f8919eca4779c69a374c184200cd9e6eded9ba53052fd73578df
+    - rancher/mirrored-metrics-server:v0.6.2
+    sizeBytes: 68892890
+  - names:
+    - rancher/mirrored-flannelcni-flannel@sha256:c9786f434d4663c924aeca1a2e479786d63df0d56c5d6bd62a64915f81d62ff0
+    - rancher/mirrored-flannelcni-flannel:v0.19.2
+    sizeBytes: 62313830
+  - names:
+    - ghcr.io/cisco-open/cluster-registry-controller@sha256:937eff91df1ec235db987826248ba64c040ad9bd9725a2c36c9cd53b23dc4b11
+    - ghcr.io/cisco-open/cluster-registry-controller:v0.2.12
+    sizeBytes: 50002021
+  - names:
+    - rancher/mirrored-coredns-coredns@sha256:823626055cba80e2ad6ff26e18df206c7f26964c7cd81a8ef57b4dc16c0eec61
+    - rancher/mirrored-coredns-coredns:1.9.4
+    sizeBytes: 49802873
+  - names:
+    - rancher/mirrored-cluster-proportional-autoscaler@sha256:d9333aded9b1a0526a0c756f9c72037abd742a08ed099575588175a8d9e29cee
+    - rancher/mirrored-cluster-proportional-autoscaler:1.8.6
+    sizeBytes: 47910609
+  - names:
+    - rancher/mirrored-ingress-nginx-kube-webhook-certgen@sha256:28197903d736aae74cbb1fa9e0ccbd11129395f0f65ad94281cc7fdfec020b25
+    - rancher/mirrored-ingress-nginx-kube-webhook-certgen:v1.1.1
+    sizeBytes: 47736388
+  - names:
+    - rancher/mirrored-pause@sha256:74c4244427b7312c5b901fe0f67cbc53683d06f4f24c6faee65d4182bf0fa893
+    - rancher/mirrored-pause:3.6
+    sizeBytes: 682696
+  nodeInfo:
+    architecture: amd64
+    bootID: 535a110c-df41-43d1-b3fc-38ef3fab2d80
+    containerRuntimeVersion: docker://20.10.24
+    kernelVersion: 5.19.0-0.deb11.2-amd64
+    kubeProxyVersion: v1.25.6
+    kubeletVersion: v1.25.6
+    machineID: 50ca20960ea94552bd5ef84a20ce7e47
+    operatingSystem: linux
+    osImage: Debian GNU/Linux 11 (bullseye)
+    systemUUID: 50b00101-2870-0381-61f6-ab754bc3177c
