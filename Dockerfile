@@ -10,7 +10,7 @@ ARG UID
 
 # Create user and group
 RUN groupadd -g ${GID} appgroup && \
-    useradd -u ${UID} --gid appgroup appuser
+    useradd -l -u ${UID} --gid appgroup appuser
 
 ARG GOPROXY="https://proxy.golang.org,direct"
 ENV GOPROXY="${GOPROXY}"
@@ -26,15 +26,13 @@ COPY ./go.sum /workspace/
 # Copy the API Go Modules manifests
 COPY api/go.mod api/go.mod
 COPY api/go.sum api/go.sum
-RUN if [ -n "${GITHUB_ACCESS_TOKEN}" ]; then \
-      git config --global url."https://${GITHUB_ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"; \
-    fi
-RUN go mod download
+
+RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY ./ /workspace/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} GO111MODULE=on make binary
+RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg/mod CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} make binary
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
