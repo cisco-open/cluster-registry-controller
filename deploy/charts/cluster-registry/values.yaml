@@ -26,7 +26,7 @@ securityContext:
       - ALL
 image:
   repository: ghcr.io/cisco-open/cluster-registry-controller
-  tag: v0.2.10
+  tag: v0.2.12
   pullPolicy: IfNotPresent
 
 nodeSelector: {}
@@ -34,10 +34,10 @@ affinity: {}
 tolerations: []
 resources:
   requests:
-    memory: "100Mi"
+    memory: "150Mi"
     cpu: "100m"
   limits:
-    memory: "200Mi"
+    memory: "300Mi"
     cpu: "300m"
 
 service:
