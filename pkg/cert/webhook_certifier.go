@@ -17,11 +17,6 @@ package cert
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"reflect"
-	"strings"
-
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	"emperror.dev/errors"
 	"github.com/go-logr/logr"
@@ -64,9 +59,6 @@ type WebhookCertifier struct {
 
 	// triggers is the channel to notify the certificate renewer on changes.
 	triggers chan struct{}
-
-	// webhookCertBundleReadyz is used to check readiness of cluster-registry
-	webhookCertBundleReadyz bool
 }
 
 // NewWebhookCertifier returns an object which can manage the generation and
@@ -77,19 +69,17 @@ func NewWebhookCertifier(
 	webhookNamespace string,
 	webhookManager manager.Manager,
 	certificateRenewer *Renewer,
-	webhookCertBundleReadyz bool,
 ) *WebhookCertifier {
 	return &WebhookCertifier{
 		logger: logger.WithValues("key", client.ObjectKey{
 			Namespace: webhookNamespace,
 			Name:      webhookName,
 		}),
-		webhookName:             webhookName,
-		webhookNamespace:        webhookNamespace,
-		webhookManager:          webhookManager,
-		triggers:                make(chan struct{}),
-		certificateRenewer:      certificateRenewer,
-		webhookCertBundleReadyz: webhookCertBundleReadyz,
+		webhookName:        webhookName,
+		webhookNamespace:   webhookNamespace,
+		webhookManager:     webhookManager,
+		triggers:           make(chan struct{}),
+		certificateRenewer: certificateRenewer,
 	}
 }
 
@@ -130,13 +120,21 @@ func (certifier *WebhookCertifier) Start(ctx context.Context) error {
 			if err != nil {
 				return errors.Wrap(err, "updating webhook certificate failed")
 			}
-			certifier.webhookCertBundleReadyz = true
 		}
 
 		return nil
 	})
 
-	defer close(certifier.triggers)
+	defer func() {
+		close(certifier.triggers)
+
+		certifier.logger.Info("set webhook failure policy to Ignore")
+		certifier.setFailurePolicy(admissionregistrationv1.Ignore)
+		err = certifier.updateCertificate()
+		if err != nil {
+			certifier.logger.Error(err, "updating webhook certificate failed")
+		}
+	}()
 
 	return certifier.certificateRenewer.Start(ctx, certifier.triggers)
 }
@@ -238,7 +236,7 @@ func (certifier *WebhookCertifier) startWebhookConfigurationInformer() error {
 		return errors.New("invalid certifier, all known webhook configurations are nil")
 	}
 
-	kind := strings.Split(reflect.TypeOf(config).String(), ".")[1] // Note: removing *v1. pointer and package prefix.
+	kind := config.GetObjectKind().GroupVersionKind().Kind
 	logger := certifier.logger.WithValues("kind", kind)
 
 	logger.Info("starting webhook configuration informer")
@@ -298,6 +296,23 @@ func (certifier *WebhookCertifier) startWebhookConfigurationInformer() error {
 	return nil
 }
 
+// setFailurePolicy set the webhooks' failure policy
+func (certifier *WebhookCertifier) setFailurePolicy(policy admissionregistrationv1.FailurePolicyType) {
+	if certifier.validatingWebhookConfiguration != nil {
+		for index, webhook := range certifier.validatingWebhookConfiguration.Webhooks {
+			webhook.FailurePolicy = &policy
+			certifier.validatingWebhookConfiguration.Webhooks[index] = webhook
+		}
+	}
+
+	if certifier.mutatingWebhookConfiguration != nil {
+		for index, webhook := range certifier.mutatingWebhookConfiguration.Webhooks {
+			webhook.FailurePolicy = &policy
+			certifier.mutatingWebhookConfiguration.Webhooks[index] = webhook
+		}
+	}
+}
+
 // updateCertificate updates the webhook's certificate with the renewer's
 // current one.
 func (certifier *WebhookCertifier) updateCertificate() error {
@@ -335,7 +350,7 @@ func (certifier *WebhookCertifier) updateCertificate() error {
 		Namespace: certifier.webhookNamespace,
 		Name:      certifier.webhookName,
 	}
-	logger = logger.WithValues("kind", strings.Split(reflect.TypeOf(desiredConfig).String(), ".")[1])
+	logger = logger.WithValues("kind", desiredConfig.GetObjectKind().GroupVersionKind().Kind)
 
 	client := certifier.webhookManager.GetClient()
 
@@ -407,14 +422,4 @@ func (certifier *WebhookCertifier) updateCertificate() error {
 	logger.Info("webhook configuration certificate updated successfully")
 
 	return nil
-}
-
-func (certifier *WebhookCertifier) WebhookCertBundleReadyzChecker() healthz.Checker {
-	return func(req *http.Request) error {
-		if !certifier.webhookCertBundleReadyz {
-			return errors.New("webhook cert bundle is not ready yet")
-		}
-
-		return nil
-	}
 }
