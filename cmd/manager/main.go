@@ -88,13 +88,19 @@ func main() {
 		}
 	}
 
+	leaseDuration := configuration.LeaderElection.LeaseDuration
+	renewDeadline := leaseDuration / 2 //nolint:gomnd
+
 	options := ctrl.Options{
-		Scheme:                  scheme,
-		MetricsBindAddress:      configuration.MetricsAddr,
-		LeaderElection:          configuration.LeaderElection.Enabled,
-		LeaderElectionID:        configuration.LeaderElection.Name,
-		LeaderElectionNamespace: configuration.LeaderElection.Namespace,
-		HealthProbeBindAddress:  configuration.HealthAddr,
+		Scheme:                        scheme,
+		MetricsBindAddress:            configuration.MetricsAddr,
+		LeaderElection:                configuration.LeaderElection.Enabled,
+		LeaderElectionID:              configuration.LeaderElection.Name,
+		LeaderElectionNamespace:       configuration.LeaderElection.Namespace,
+		LeaseDuration:                 &leaseDuration,
+		RenewDeadline:                 &renewDeadline,
+		LeaderElectionReleaseOnCancel: configuration.LeaderElection.ReleaseOnExit,
+		HealthProbeBindAddress:        configuration.HealthAddr,
 	}
 
 	if configuration.ClusterValidatorWebhook.Enabled {
@@ -139,7 +145,6 @@ func main() {
 			configuration.Namespace,
 			mgr,
 			clusterValidatorCertRenewer,
-			false,
 		)
 		err = mgr.Add(clusterWebhookCertifier)
 		if err != nil {
@@ -147,9 +152,6 @@ func main() {
 
 			os.Exit(1)
 		}
-
-		// When webhook is enabled - check if webhook certificates are updated successfully then set container ready
-		readyzCheckSelector = clusterWebhookCertifier.WebhookCertBundleReadyzChecker()
 	}
 
 	ctx := signals.NotifyContext(context.Background())

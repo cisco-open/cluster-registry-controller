@@ -19,6 +19,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"emperror.dev/errors"
 	flag "github.com/spf13/pflag"
@@ -90,7 +91,10 @@ func initConfiguration(v *viper.Viper, p *flag.FlagSet) {
 	_ = viper.BindPFlag("leader-election.name", p.Lookup("leader-election-name"))
 	p.String("leader-election-namespace", "", "Determines the namespace in which the leader election configmap will be created.")
 	_ = viper.BindPFlag("leader-election.namespace", p.Lookup("leader-election-namespace"))
-
+	p.Duration("leader-election-lease-duration", time.Second*5, "Sets the duration that non-leader candidates will wait to force acquire leadership.")
+	_ = viper.BindPFlag("leader-election.leaseDuration", p.Lookup("leader-election-lease-duration"))
+	p.Bool("leader-election-release-on-exit", true, "Whether the leader should step down voluntarily on exit")
+	_ = viper.BindPFlag("leader-election.releaseOnExit", p.Lookup("leader-election-release-on-exit"))
 	p.Int("log-verbosity", 0, "Log verbosity")
 	_ = viper.BindPFlag("log.verbosity", p.Lookup("log-verbosity"))
 	p.String("log-format", "json", "Log format (console, json)")

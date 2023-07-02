@@ -14,6 +14,8 @@
 
 package config
 
+import "time"
+
 type Configuration struct {
 	MetricsAddr                string            `mapstructure:"metrics-addr" json:"metricsAddr,omitempty"`
 	HealthAddr                 string            `mapstructure:"health-addr" json:"healthAddr,omitempty"`
@@ -67,9 +69,11 @@ type SyncControllerRateLimit struct {
 }
 
 type LeaderElection struct {
-	Enabled   bool   `mapstructure:"enabled" json:"enabled,omitempty"`
-	Name      string `mapstructure:"name" json:"name,omitempty"`
-	Namespace string `mapstructure:"namespace" json:"namespace,omitempty"`
+	Enabled       bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	Name          string        `mapstructure:"name" json:"name,omitempty"`
+	Namespace     string        `mapstructure:"namespace" json:"namespace,omitempty"`
+	LeaseDuration time.Duration `mapsturecture:"leaseDuration" json:"leaseDuration,omitempty"`
+	ReleaseOnExit bool          `mapstructure:"releaseOnExit" json:"releaseOnExit,omitempty"`
 }
 
 type (
