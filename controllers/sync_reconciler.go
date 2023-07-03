@@ -890,7 +890,17 @@ func (r *syncReconciler) createClient(config *rest.Config, cache cache.Cache) (c
 }
 
 func (r *syncReconciler) createAndStartCache() (cache.Cache, error) {
-	cche, err := cache.New(r.localMgr.GetConfig(), cache.Options{
+	cacheFunc := cache.New
+
+	relatedNamespaces := r.rule.GetRelatedNamespaces()
+	if len(relatedNamespaces) > 0 {
+		r.GetLogger().Info("create multi namespace cache", "namespaces", relatedNamespaces)
+		cacheFunc = cache.MultiNamespacedCacheBuilder(relatedNamespaces)
+	} else {
+		r.GetLogger().Info("create cache")
+	}
+
+	cche, err := cacheFunc(r.localMgr.GetConfig(), cache.Options{
 		Scheme: r.localMgr.GetScheme(),
 		Mapper: r.localMgr.GetRESTMapper(),
 	})
