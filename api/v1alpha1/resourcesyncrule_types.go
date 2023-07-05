@@ -137,6 +137,32 @@ const (
 
 type ResourceSyncRuleStatus struct{}
 
+// GetRelatedNamespaces gathers namespaces from rule matchers
+// it returns an empty list if any of the matchers is without namespace filter
+// since it means every namespace is related
+func (s *ResourceSyncRule) GetRelatedNamespaces() []string {
+	namespaces := []string{}
+
+	_namespaces := map[string]struct{}{}
+
+	for _, rule := range s.Spec.Rules {
+		for _, match := range rule.Matches {
+			if len(match.Namespaces) == 0 {
+				return namespaces
+			}
+			for _, ns := range match.Namespaces {
+				_namespaces[ns] = struct{}{}
+			}
+		}
+	}
+
+	for ns := range _namespaces {
+		namespaces = append(namespaces, ns)
+	}
+
+	return namespaces
+}
+
 // +kubebuilder:object:root=true
 
 // ResourceSyncRule is the Schema for the resource sync rule API

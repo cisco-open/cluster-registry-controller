@@ -253,12 +253,12 @@ func (r *ClusterReconciler) getRemoteCluster(ctx context.Context, cluster *clust
 		return nil, errors.WrapIf(err, "could not create new cluster")
 	}
 
-	err = remoteCluster.AddController(clusters.NewManagedController("remote-cluster", NewRemoteClusterReconciler(cluster.Name, r.GetManager(), r.GetLogger()), r.GetLogger()))
+	err = remoteCluster.AddController(clusters.NewManagedController("remote-cluster", nil, NewRemoteClusterReconciler(cluster.Name, r.GetManager(), r.GetLogger()), r.GetLogger()))
 	if err != nil {
 		return nil, errors.WrapIf(err, "could not add managed controller")
 	}
 
-	err = remoteCluster.AddController(clusters.NewManagedController("remote-cluster-feature", NewClusterFeatureReconciler(cluster.Name, remoteCluster, r.GetLogger()), r.GetLogger()))
+	err = remoteCluster.AddController(clusters.NewManagedController("remote-cluster-feature", nil, NewClusterFeatureReconciler(cluster.Name, remoteCluster, r.GetLogger()), r.GetLogger()))
 	if err != nil {
 		return nil, errors.WrapIf(err, "could not add managed controller")
 	}

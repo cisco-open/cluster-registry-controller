@@ -43,7 +43,7 @@ func TestClusterFeatures(t *testing.T) {
 	cf2 := clusters.NewClusterFeature("another-test-feature", "another-test-feature", nil)
 
 	r := clusters.NewManagedReconciler("test", logr.Discard())
-	c := clusters.NewManagedController("test", r, logr.Discard(), clusters.WithRequiredClusterFeatures(
+	c := clusters.NewManagedController("test", nil, r, logr.Discard(), clusters.WithRequiredClusterFeatures(
 		clusters.ClusterFeatureRequirement{
 			Name: "test-feature",
 			MatchLabels: map[string]string{

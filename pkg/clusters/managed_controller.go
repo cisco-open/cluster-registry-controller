@@ -43,6 +43,7 @@ type ManagedControllers map[string]ManagedController
 
 type managedController struct {
 	name              string
+	relatedNamespaces []string
 	reconciler        ManagedReconciler
 	log               logr.Logger
 	mgr               ctrl.Manager
@@ -66,9 +67,10 @@ func WithRequiredClusterFeatures(features ...ClusterFeatureRequirement) ManagedC
 	}
 }
 
-func NewManagedController(name string, r ManagedReconciler, l logr.Logger, options ...ManagedControllerOption) ManagedController {
+func NewManagedController(name string, relatedNamespaces []string, r ManagedReconciler, l logr.Logger, options ...ManagedControllerOption) ManagedController {
 	m := &managedController{
 		name:                    name,
+		relatedNamespaces:       relatedNamespaces,
 		reconciler:              r,
 		log:                     l.WithName(name),
 		requiredClusterFeatures: make([]ClusterFeatureRequirement, 0),
@@ -188,7 +190,15 @@ func (c *managedController) createAndStartCache() (cache.Cache, error) {
 		return nil, errors.New("context is nil")
 	}
 
-	cche, err := cache.New(c.mgr.GetConfig(), cache.Options{
+	cacheFunc := cache.New
+	if len(c.relatedNamespaces) > 0 {
+		c.log.Info("create multi namespace cache", "namespaces", c.relatedNamespaces)
+		cacheFunc = cache.MultiNamespacedCacheBuilder(c.relatedNamespaces)
+	} else {
+		c.log.Info("create cache")
+	}
+
+	cche, err := cacheFunc(c.mgr.GetConfig(), cache.Options{
 		Scheme: c.mgr.GetScheme(),
 		Mapper: c.mgr.GetRESTMapper(),
 	})
