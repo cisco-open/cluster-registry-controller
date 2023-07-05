@@ -229,7 +229,7 @@ func InitNewResourceSyncController(rule *clusterregistryv1alpha1.ResourceSyncRul
 	if err != nil {
 		return nil, errors.WithStackIf(err)
 	}
-	ctrl := clusters.NewManagedController(rule.Name, srec, log, clusters.WithRequiredClusterFeatures(requiredClusterFeatures...))
+	ctrl := clusters.NewManagedController(rule.Name, rule.GetRelatedNamespaces(), srec, log, clusters.WithRequiredClusterFeatures(requiredClusterFeatures...))
 
 	return ctrl, cluster.AddController(ctrl)
 }
