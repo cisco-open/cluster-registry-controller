@@ -1,0 +1,146 @@
+name: e2e
+
+on:
+  pull_request:
+  push:
+    branches:
+    - 'ci-e2e**'
+
+env:
+  GO_VERSION: 1.18
+  GOFLAGS: -mod=readonly
+
+jobs:
+  build:
+    name: Build project
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go module dependencies
+        id: cache-go-module-dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: go-mod-cache-${{ runner.os }}-${{ env.GO_VERSION }}-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-mod-cache-${{ runner.os }}-${{ env.GO_VERSION }}
+            go-mod-cache-${{ runner.os }}
+            go-mod-cache
+      - name: Set go env
+        run: |
+          echo GOPATH=$GITHUB_WORKSPACE >> $GITHUB_ENV
+          echo GO111MODULE=on >> $GITHUB_ENV
+          echo $GITHUB_WORKSPACE/bin >> $GITHUB_PATH
+      - name: Set Git refname
+        id: set-git-refname
+        run: echo ::set-output name=git_refname::$(echo "${{ github.ref }}" | sed -r 's@refs/(heads|pull|tags)/@@g' )
+
+      - name: Cache build dependencies
+        id: cache-build-dependencies
+        uses: actions/cache@v2
+        with:
+          path: bin/
+          key: build-deps-v2-${{ steps.set-git-refname.outputs.git_refname }}-{{ hashFiles('scripts/download-deps.sh') }}
+          restore-keys: |
+            build-deps-v2-${{ steps.set-git-refname.outputs.git_refname }}
+            build-deps-v2
+
+      - name: Run build
+        run: IMG=cluster-registry-controller:ci-test make docker-build
+        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+      - name: Get kind
+        run: go install sigs.k8s.io/kind@v0.11.1
+      - name: Get helm
+        run: |
+          wget -q -O - https://get.helm.sh/helm-v3.2.1-linux-amd64.tar.gz | tar -C /tmp -xzf -
+          mv /tmp/linux-amd64/helm $GITHUB_WORKSPACE/bin && chmod a+x $GITHUB_WORKSPACE/bin/helm
+      - name: Create kind clusters
+        run: |
+          if [[ $KUBERNETES_VERSION=="" ]]; then
+              KUBERNETES_VERSION="v1.22.1"
+          fi
+          for (( i = 1; i <= 2; i++ )); do
+              kind create cluster --name "kind-${i}" --config test/e2e/cluster-config.yaml --image="kindest/node:$KUBERNETES_VERSION"
+              configPath=${{ github.workspace }}/src/github.com/${{ github.repository }}/config${i}
+              kind get kubeconfig --name "kind-${i}" > ${configPath}
+              echo KUBECONFIG${i}=${configPath} >> $GITHUB_ENV
+              echo CLUSTER${i}_CIDR="172.18.${i}.128/25" >> $GITHUB_ENV
+              kind load docker-image cluster-registry-controller:ci-test --name "kind-${i}"
+          done
+        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+      - name: multicluster tests
+        id: test-multicluster
+        run: |
+          mkdir ${ARTIFACTS_DIR}
+          kubectl config get-contexts --kubeconfig $KUBECONFIG1
+          kubectl config get-contexts --kubeconfig $KUBECONFIG2
+          kubectl get nodes --kubeconfig $KUBECONFIG1
+          kubectl get nodes --kubeconfig $KUBECONFIG2
+          kubectl get pods -A --kubeconfig $KUBECONFIG1
+          helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=c1 --set image.repository=cluster-registry-controller --set image.tag=ci-test --kubeconfig $KUBECONFIG1
+          kubectl get pods -A --kubeconfig $KUBECONFIG1
+          kubectl get pods -A --kubeconfig $KUBECONFIG2
+          helm install --namespace=cluster-registry --create-namespace cluster-registry-controller deploy/charts/cluster-registry --set localCluster.name=c2 --set image.repository=cluster-registry-controller --set image.tag=ci-test --kubeconfig $KUBECONFIG2
+          kubectl get pods -A --kubeconfig $KUBECONFIG2
+          kubectl describe deployment -n cluster-registry cluster-registry-controller-controller --kubeconfig $KUBECONFIG1
+          kubectl describe deployment -n cluster-registry cluster-registry-controller-controller --kubeconfig $KUBECONFIG2
+          kubectl wait pods -l app.kubernetes.io/name=cluster-registry-controller --timeout=120s --for condition=Ready -n cluster-registry --kubeconfig $KUBECONFIG1
+          kubectl wait pods -l app.kubernetes.io/name=cluster-registry-controller --timeout=120s --for condition=Ready -n cluster-registry --kubeconfig $KUBECONFIG2
+          kubectl get pods -A --kubeconfig $KUBECONFIG1 > ${ARTIFACTS_DIR}/pods_c1.txt
+          kubectl get pods -A --kubeconfig $KUBECONFIG2 > ${ARTIFACTS_DIR}/pods_c2.txt
+          kubectl get secrets -A --kubeconfig $KUBECONFIG1 > ${ARTIFACTS_DIR}/secrets_c1.txt
+          kubectl get secrets -A --kubeconfig $KUBECONFIG2 > ${ARTIFACTS_DIR}/secrets_c2.txt
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG1
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG2
+          echo "Getting cluster c1"
+          kubectl get cluster c1 --kubeconfig $KUBECONFIG1 -o yaml | kubectl apply --kubeconfig $KUBECONFIG2 -f -
+          echo "Getting secret c1"
+          kubectl get secret -n cluster-registry c1 --kubeconfig $KUBECONFIG1 -o yaml | kubectl apply --kubeconfig $KUBECONFIG2 -f -
+          echo "Getting cluster c2"
+          kubectl get cluster c2 --kubeconfig $KUBECONFIG2 -o yaml | kubectl apply --kubeconfig $KUBECONFIG1 -f -
+          echo "Getting secret c2"
+          kubectl get secret -n cluster-registry c2 --kubeconfig $KUBECONFIG2 -o yaml | kubectl apply --kubeconfig $KUBECONFIG1 -f -
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG1
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG2
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG1 > ${ARTIFACTS_DIR}/clusters_c1.yaml
+          kubectl get clusters -o yaml  --kubeconfig $KUBECONFIG2 > ${ARTIFACTS_DIR}/clusters_c2.yaml
+          sleep 30
+          sync1=$(kubectl get clusters -A --kubeconfig $KUBECONFIG1 -o jsonpath='{range .items[*]}{@.status.conditions[?(@.type=="ClustersSynced")].status}{end}')
+          echo "Cluster 1 sync status = ${sync1}"
+          sync2=$(kubectl get clusters -A --kubeconfig $KUBECONFIG2 -o jsonpath='{range .items[*]}{@.status.conditions[?(@.type=="ClustersSynced")].status}{end}')
+          echo "Cluster 2 sync status = ${sync2}"
+          if [[ "${sync1}" == "" || "${sync2}" == "" ]]; then
+            echo "one or more clusters missing sync status"
+            exit 1
+          fi
+          sync_reason1=$(kubectl get clusters -A --kubeconfig $KUBECONFIG1 -o jsonpath='{range .items[*]}{@.status.conditions[?(@.type=="ClustersSynced")].reason}{end}')
+          sync_reason2=$(kubectl get clusters -A --kubeconfig $KUBECONFIG2 -o jsonpath='{range .items[*]}{@.status.conditions[?(@.type=="ClustersSynced")].reason}{end}')
+          echo "Sync status reason 1 = '${sync_reason1}'"
+          echo "Sync status reason 2 = '${sync_reason2}'"
+          if [[ "${sync1}" == "False" || "${sync2}" == "False" ]]; then
+            echo "one or more clusters are not in sync"
+            exit 1
+          fi
+        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        env:
+          ARTIFACTS_DIR: ${{ github.workspace }}/test_artifacts
+      - name: Cleanup resources
+        if: ${{ success() || failure() || cancelled() }}
+        run: kind delete clusters $(kind get clusters)
+      - name: Upload artifacts
+        if: ${{ success() || failure() || cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test_artifacts
+          path: ${{ github.workspace }}/test_artifacts
+
